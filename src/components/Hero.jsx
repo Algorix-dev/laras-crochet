@@ -6,11 +6,29 @@ import { useCurrency } from "../context/CurrencyContext";
 import ShareButton from "./ShareButton";
 import MoreOptionsMenu from "./MoreOptionsMenu";
 
+/*
+  TIP: "Rotate to center" carousel — clicking an angle reorders
+  the array so that item appears at position 2 (center). The
+  motion.div with `layout` animates the position swap smoothly.
+*/
 export default function Hero({ product }) {
   const [centerIndex, setCenterIndex] = useState(2);
   const angles = product.angles;
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { formatPrice } = useCurrency();
+
+  /* TIP: Build display order so centerIndex is always at position 2.
+     Example: if centerIndex=0, order is [3,4,0,1,2] — item 0 is
+     in the middle, others flow naturally to its sides. */
+  const displayOrder = (() => {
+    const order = [];
+    for (let i = 0; i < angles.length; i++) {
+      const offset = (i - centerIndex + angles.length) % angles.length;
+      const displayPos = (offset + 2) % angles.length;
+      order[displayPos] = i;
+    }
+    return order;
+  })();
 
   return (
     <section className="pt-10 md:pt-16 pb-10 text-center px-5">
@@ -20,26 +38,29 @@ export default function Hero({ product }) {
         </h1>
 
         <div className="flex items-end justify-center gap-3 md:gap-6 -mt-10 sm:-mt-14 md:-mt-20">
-          {angles.map((angle, i) => {
-            const isActive = i === centerIndex;
-            const distance = Math.abs(i - centerIndex);
+          {displayOrder.map((originalIndex, displayPos) => {
+            const angle = angles[originalIndex];
+            const isCenter = displayPos === 2;
+            const distance = Math.abs(displayPos - 2);
+
+            /* On mobile, hide items 2+ from center. On desktop, show all 5. */
             const responsiveClass = distance >= 2 ? "hidden md:block" : "";
 
             return (
               <motion.div
-                key={i}
+                key={`angle-${originalIndex}`}
                 layout
                 role="button"
                 tabIndex={0}
-                onClick={() => setCenterIndex(i)}
+                onClick={() => setCenterIndex(originalIndex)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    setCenterIndex(i);
+                    setCenterIndex(originalIndex);
                   }
                 }}
-                aria-label={`View angle ${i + 1} of ${product.name}`}
-                aria-current={isActive}
+                aria-label={`View angle ${originalIndex + 1} of ${product.name}`}
+                aria-current={isCenter}
                 className={`relative cursor-pointer focus-visible:outline-none ${responsiveClass}`}
                 transition={{
                   type: "spring",
@@ -48,7 +69,7 @@ export default function Hero({ product }) {
                   mass: 0.8,
                 }}
               >
-                {isActive && (
+                {isCenter && (
                   <motion.div
                     layoutId="ground-shadow"
                     className="absolute left-1/2 -translate-x-1/2 bottom-1 w-3/4 h-3 bg-black/20 blur-md rounded-full -z-10"
@@ -58,19 +79,19 @@ export default function Hero({ product }) {
                 <img
                   src={angle.src}
                   alt={
-                    isActive
+                    isCenter
                       ? `${product.name}, front view`
                       : `${product.name}, alternate angle`
                   }
                   className={`relative z-10 h-auto pointer-events-none transition-all duration-500 ease-[0.22,1,0.36,1] ${
-                    isActive
+                    isCenter
                       ? "w-40 sm:w-48 md:w-56 opacity-100"
                       : "w-32 md:w-40 opacity-40"
-                  } ${angle.flip ? "mirror" : ""}`}
+                  }`}
                   style={angle.flip ? { transform: "scaleX(-1)" } : {}}
                 />
 
-                {isActive && (
+                {isCenter && (
                   <div className="absolute -right-6 sm:-right-7 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
                     <button
                       aria-label="Toggle wishlist"
