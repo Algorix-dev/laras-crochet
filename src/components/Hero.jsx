@@ -1,16 +1,11 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Heart } from "lucide-react";
 import { useWishlist } from "../context/WishlistContext";
 import { useCurrency } from "../context/CurrencyContext";
 import ShareButton from "./ShareButton";
 import MoreOptionsMenu from "./MoreOptionsMenu";
 
-/*
-  TIP: All 5 angle images render at once — nothing mounts/unmounts
-  on click. Only opacity/scale/scaleX change via CSS transitions.
-  This is the key performance fix: the browser handles these via
-  GPU compositing, not React re-rendering.
-*/
 export default function Hero({ product }) {
   const [centerIndex, setCenterIndex] = useState(2);
   const angles = product.angles;
@@ -28,13 +23,12 @@ export default function Hero({ product }) {
           {angles.map((angle, i) => {
             const isActive = i === centerIndex;
             const distance = Math.abs(i - centerIndex);
-
-            /* On mobile, hide items 2+ from center. On desktop, show all 5. */
             const responsiveClass = distance >= 2 ? "hidden md:block" : "";
 
             return (
-              <div
+              <motion.div
                 key={i}
+                layout
                 role="button"
                 tabIndex={0}
                 onClick={() => setCenterIndex(i)}
@@ -47,9 +41,18 @@ export default function Hero({ product }) {
                 aria-label={`View angle ${i + 1} of ${product.name}`}
                 aria-current={isActive}
                 className={`relative cursor-pointer focus-visible:outline-none ${responsiveClass}`}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30,
+                  mass: 0.8,
+                }}
               >
                 {isActive && (
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-1 w-3/4 h-3 bg-black/20 blur-md rounded-full -z-10" />
+                  <motion.div
+                    layoutId="ground-shadow"
+                    className="absolute left-1/2 -translate-x-1/2 bottom-1 w-3/4 h-3 bg-black/20 blur-md rounded-full -z-10"
+                  />
                 )}
 
                 <img
@@ -61,9 +64,10 @@ export default function Hero({ product }) {
                   }
                   className={`relative z-10 h-auto pointer-events-none transition-all duration-500 ease-[0.22,1,0.36,1] ${
                     isActive
-                      ? "w-40 sm:w-48 md:w-56 opacity-100 scale-100"
-                      : "w-32 md:w-40 opacity-40 scale-[0.95]"
-                  } ${angle.flip ? "-scale-x-100" : ""}`}
+                      ? "w-40 sm:w-48 md:w-56 opacity-100"
+                      : "w-32 md:w-40 opacity-40"
+                  } ${angle.flip ? "mirror" : ""}`}
+                  style={angle.flip ? { transform: "scaleX(-1)" } : {}}
                 />
 
                 {isActive && (
@@ -92,7 +96,7 @@ export default function Hero({ product }) {
                     <MoreOptionsMenu product={product} />
                   </div>
                 )}
-              </div>
+              </motion.div>
             );
           })}
         </div>
