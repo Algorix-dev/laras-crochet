@@ -6,8 +6,8 @@
   To "unlock" a page, go to App.jsx and swap <ComingSoon /> back
   to the real component (e.g. <ShopPage />).
 */
-import { Link } from 'react-router-dom';
-import Footer from './Footer';
+import { Link } from "react-router-dom";
+import Footer from "../components/Footer";
 
 export default function ComingSoon() {
   return (
