@@ -1,0 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=Yellowtail&display=swap');
+@import "tailwindcss";
+
+/* -----------------------------------------------------------
+   TIP: these CSS variables are our single source of truth for
+   the brand. Change a color here once, and every component
+   that references it (via Tailwind's arbitrary value syntax,
+   e.g. bg-[var(--maroon)]) updates everywhere. This is how you
+   avoid hunting through 12 files to change one hex code.
+----------------------------------------------------------- */
+:root {
+  --maroon: #4a0e1e;
+  --maroon-dark: #350a16;
+  --cream: #f7f6f3;
+  --ink: #15141a;
+  --muted: #6f6d76;
+  --line: #e4e2dd;
+  --mauve: #c9aeb4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: 'Instrument Serif', serif;
+}
+
+/* Utility for the mobile horizontal scroll strip in the custom
+   order section — hides the scrollbar but keeps it functional */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Accessibility: visible keyboard focus ring everywhere,
+   never remove this even if it "looks messy" in a screenshot */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--maroon);
+  outline-offset: 2px;
+}
+
+/* Respect users who've asked their OS for reduced motion —
+   this is a real accessibility requirement, not optional polish */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
