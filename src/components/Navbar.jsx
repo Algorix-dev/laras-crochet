@@ -8,26 +8,24 @@
   - Currency selector dropdown with real SVG flags
   - Mobile hamburger menu with all the same controls
 */
-import { useState } from 'react';
-import { Heart, Search, ShoppingBag, User, Menu, X } from 'lucide-react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
-import { useWishlist } from '../context/WishlistContext';
-import { useAuth } from '../context/AuthContext';
-import BagDrawer from './BagDrawer';
-import CurrencySelector from './CurrencySelector';
-import SearchOverlay from './SearchOverlay';
+import { useState } from "react";
+import { Heart, Search, ShoppingBag, User, Menu, X } from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
+import { useAuth } from "../context/AuthContext";
+import CurrencySelector from "./CurrencySelector";
+import SearchOverlay from "./SearchOverlay";
 
 const LINKS = [
-  { label: 'Shop', to: '/shop' },
-  { label: 'Custom Orders', to: '/contact?flow=custom' },
-  { label: 'About', to: '/about' },
-  { label: 'Contact', to: '/contact' },
+  { label: "Shop", to: "/shop" },
+  { label: "Custom Orders", to: "/contact?flow=custom" },
+  { label: "About", to: "/about" },
+  { label: "Contact", to: "/contact" },
 ];
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [bagOpen, setBagOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
   const { cartCount } = useCart();
@@ -37,7 +35,8 @@ export default function Navbar() {
   const location = useLocation();
 
   const isActive = (to) => {
-    if (to === '/') return location.pathname === '/' && !location.hash && !location.search;
+    if (to === "/")
+      return location.pathname === "/" && !location.hash && !location.search;
     return location.pathname + location.search === to;
   };
 
@@ -45,7 +44,7 @@ export default function Navbar() {
   const BagButton = () => (
     <button
       aria-label={`Bag, ${cartCount} items`}
-      onClick={() => setBagOpen(true)}
+      onClick={() => navigate("/bag")}
       className="relative hover:text-[var(--maroon)]"
     >
       <ShoppingBag size={18} />
@@ -61,7 +60,7 @@ export default function Navbar() {
   const WishlistButton = () => (
     <button
       aria-label={`Wishlist, ${wishlistCount} items`}
-      onClick={() => navigate('/wishlist')}
+      onClick={() => navigate("/wishlist")}
       className="relative hover:text-[var(--maroon)]"
     >
       <Heart size={18} />
@@ -88,7 +87,11 @@ export default function Navbar() {
               <Link
                 key={l.label}
                 to={l.to}
-                className={isActive(l.to) ? 'font-bold text-[var(--ink)]' : 'text-[var(--muted)] hover:text-[var(--ink)]'}
+                className={
+                  isActive(l.to)
+                    ? "font-bold text-[var(--ink)]"
+                    : "text-[var(--muted)] hover:text-[var(--ink)]"
+                }
               >
                 {l.label}
               </Link>
@@ -97,17 +100,14 @@ export default function Navbar() {
 
           {/* Desktop utility icons */}
           <div className="hidden items-center gap-5 md:flex">
-            <button
-              aria-label="Search"
-              onClick={() => setSearchOpen(true)}
-            >
+            <button aria-label="Search" onClick={() => setSearchOpen(true)}>
               <Search size={18} />
             </button>
             <WishlistButton />
             <BagButton />
             <button
               aria-label="Account"
-              onClick={() => navigate(isSignedIn ? '/account' : '/signin')}
+              onClick={() => navigate(isSignedIn ? "/account" : "/signin")}
             >
               <User size={18} />
             </button>
@@ -132,7 +132,11 @@ export default function Navbar() {
                 key={l.label}
                 to={l.to}
                 onClick={() => setMenuOpen(false)}
-                className={isActive(l.to) ? 'font-bold text-[var(--ink)]' : 'text-[var(--muted)] hover:text-[var(--ink)]'}
+                className={
+                  isActive(l.to)
+                    ? "font-bold text-[var(--ink)]"
+                    : "text-[var(--muted)] hover:text-[var(--ink)]"
+                }
               >
                 {l.label}
               </Link>
@@ -152,7 +156,7 @@ export default function Navbar() {
               <button
                 aria-label="Account"
                 onClick={() => {
-                  navigate(isSignedIn ? '/account' : '/signin');
+                  navigate(isSignedIn ? "/account" : "/signin");
                   setMenuOpen(false);
                 }}
               >
@@ -166,7 +170,6 @@ export default function Navbar() {
         )}
       </header>
 
-      <BagDrawer open={bagOpen} onClose={() => setBagOpen(false)} />
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   );
