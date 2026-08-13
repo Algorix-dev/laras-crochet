@@ -65,7 +65,9 @@ export default function SignInPage() {
   const [introVisible, setIntroVisible] = useState(false);
   const [email, setEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false); // TIP: tracks focus for border styling
   const [code, setCode] = useState(["", "", "", "", "", ""]);
+  const [codeFocused, setCodeFocused] = useState(-1); // TIP: which code box is focused (-1 = none)
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -271,22 +273,52 @@ export default function SignInPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              onBlur={() => setEmailTouched(true)}
+              onFocus={() => setEmailFocused(true)}
+              onBlur={() => {
+                setEmailTouched(true);
+                setEmailFocused(false);
+              }}
               placeholder="Email"
-              className={`h-16 w-full border px-4 text-[16px] leading-6 outline-none placeholder:text-[#A3A3A3] ${
+              className={`h-16 w-full border px-4 text-[16px] leading-6 outline-none placeholder:text-[#A3A3A3] transition-colors duration-200 ${
                 showInvalid
-                  ? "border-red-400 text-red-600"
+                  ? "border-red-400 bg-red-50/30 text-red-600"
                   : emailTouched && isValidEmail
-                    ? "border-emerald-500"
-                    : "border-[#D4D4D4] focus:border-[#404040]"
+                    ? "border-emerald-500 bg-emerald-50/20"
+                    : emailFocused
+                      ? "border-[#404040]"
+                      : "border-[#D4D4D4]"
               }`}
             />
-            {emailTouched && isValidEmail && (
+            {submitting && (
+              /* TIP: spinner icon shown on the right while the code is being sent */
+              <span className="absolute right-4 top-1/2 -translate-y-1/2">
+                <svg
+                  className="h-5 w-5 animate-spin text-[#A3A3A3]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+              </span>
+            )}
+            {!submitting && emailTouched && isValidEmail && (
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-600">
                 ✓
               </span>
             )}
-            {showInvalid && (
+            {!submitting && showInvalid && (
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-red-500">
                 ✕
               </span>
@@ -344,7 +376,11 @@ export default function SignInPage() {
                 value={digit}
                 onChange={(e) => handleCodeChange(i, e.target.value)}
                 onKeyDown={(e) => handleCodeKeyDown(i, e)}
-                className="h-16 w-[60px] border-2 border-[#D4D4D4] text-center text-lg outline-none focus:border-[#404040]"
+                onFocus={() => setCodeFocused(i)}
+                onBlur={() => setCodeFocused(-1)}
+                className={`h-16 w-[60px] border-2 text-center text-lg outline-none transition-colors duration-200 ${
+                  codeFocused === i ? "border-[#404040]" : "border-[#D4D4D4]"
+                }`}
               />
             ))}
           </div>

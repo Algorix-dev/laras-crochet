@@ -17,14 +17,15 @@ import { useAuth } from "../context/AuthContext";
 import CurrencySelector from "./CurrencySelector";
 import SearchOverlay from "./SearchOverlay";
 
-/* TIP: Only links to VISIBLE pages go here. Shop is gated behind
-    Coming Soon until you're ready to unlock it. To add it back,
-    just uncomment the line below when the shop is built. */
+/* TIP: Only links to VISIBLE pages go here. For the first installment,
+    the client only wants Sign In and About visible. All other pages
+    (Shop, Custom Orders, Contact) are gated behind Coming Soon.
+    To add links back, uncomment them below when those pages are ready. */
 const LINKS = [
-  // { label: "Shop", to: "/shop" },  // ← GATED: uncomment when shop is ready
-  { label: "Custom Orders", to: "/contact?flow=custom" },
+  // { label: "Shop", to: "/shop" },              // ← GATED: uncomment when shop is ready
+  // { label: "Custom Orders", to: "/contact?flow=custom" }, // ← GATED
   { label: "About", to: "/about" },
-  { label: "Contact", to: "/contact" },
+  // { label: "Contact", to: "/contact" },        // ← GATED
 ];
 
 export default function Navbar() {
