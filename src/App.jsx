@@ -118,11 +118,24 @@ function ScrollToTop() {
   return null;
 }
 
+/* TIP: Pages where the Navbar should be hidden — these pages fill
+   the full viewport with their own background (sign-in flow, splash
+   screens, etc.). The Navbar is conditionally rendered based on the
+   current path. */
+const NO_NAVBAR_PATHS = ['/signin'];
+
+function ConditionalNavbar() {
+  const { pathname } = useLocation();
+  // TIP: Only show navbar if the current path is NOT in the hidden list
+  if (NO_NAVBAR_PATHS.includes(pathname)) return null;
+  return <Navbar />;
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <ScrollToTop />
-      <Navbar />
+      <ConditionalNavbar />
       <Toast />
       <Routes>
         {/* ===== ROUTES VISIBLE TO CLIENT (first installment) ===== */}

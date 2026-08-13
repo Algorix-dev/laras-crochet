@@ -17,15 +17,14 @@ import { useAuth } from "../context/AuthContext";
 import CurrencySelector from "./CurrencySelector";
 import SearchOverlay from "./SearchOverlay";
 
-/* TIP: Only links to VISIBLE pages go here. For the first installment,
-    the client only wants Sign In and About visible. All other pages
-    (Shop, Custom Orders, Contact) are gated behind Coming Soon.
-    To add links back, uncomment them below when those pages are ready. */
+/* TIP: All nav links are visible. Shop, Custom Orders, and Contact
+   show "Coming Soon" toast until their pages are ready. To unlock,
+   replace the toast dispatch with navigate() in the onClick handler. */
 const LINKS = [
-  // { label: "Shop", to: "/shop" },              // ← GATED: uncomment when shop is ready
-  // { label: "Custom Orders", to: "/contact?flow=custom" }, // ← GATED
+  { label: "Shop", to: "/shop", gated: true },
+  { label: "Custom Orders", to: "/contact?flow=custom", gated: true },
   { label: "About", to: "/about" },
-  // { label: "Contact", to: "/contact" },        // ← GATED
+  { label: "Contact", to: "/contact", gated: true },
 ];
 
 export default function Navbar() {
@@ -101,17 +100,35 @@ export default function Navbar() {
           {/* Desktop nav links */}
           <nav className="hidden gap-8 text-sm uppercase md:flex">
             {LINKS.map((l) => (
-              <Link
-                key={l.label}
-                to={l.to}
-                className={
-                  isActive(l.to)
-                    ? "font-bold text-[var(--ink)]"
-                    : "text-[var(--muted)] hover:text-[var(--ink)]"
-                }
-              >
-                {l.label}
-              </Link>
+              l.gated ? (
+                <button
+                  key={l.label}
+                  onClick={() => {
+                    window.dispatchEvent(
+                      new CustomEvent('lara-toast', { detail: l.label + ' is coming soon!' })
+                    );
+                  }}
+                  className={
+                    isActive(l.to)
+                      ? "font-bold text-[var(--ink)]"
+                      : "text-[var(--muted)] hover:text-[var(--ink)]"
+                  }
+                >
+                  {l.label}
+                </button>
+              ) : (
+                <Link
+                  key={l.label}
+                  to={l.to}
+                  className={
+                    isActive(l.to)
+                      ? "font-bold text-[var(--ink)]"
+                      : "text-[var(--muted)] hover:text-[var(--ink)]"
+                  }
+                >
+                  {l.label}
+                </Link>
+              )
             ))}
           </nav>
 
@@ -145,18 +162,37 @@ export default function Navbar() {
         {menuOpen && (
           <nav className="flex flex-col gap-4 px-5 pb-6 text-sm uppercase md:hidden">
             {LINKS.map((l) => (
-              <Link
-                key={l.label}
-                to={l.to}
-                onClick={() => setMenuOpen(false)}
-                className={
-                  isActive(l.to)
-                    ? "font-bold text-[var(--ink)]"
-                    : "text-[var(--muted)] hover:text-[var(--ink)]"
-                }
-              >
-                {l.label}
-              </Link>
+              l.gated ? (
+                <button
+                  key={l.label}
+                  onClick={() => {
+                    window.dispatchEvent(
+                      new CustomEvent('lara-toast', { detail: l.label + ' is coming soon!' })
+                    );
+                    setMenuOpen(false);
+                  }}
+                  className={
+                    isActive(l.to)
+                      ? "font-bold text-[var(--ink)]"
+                      : "text-[var(--muted)] hover:text-[var(--ink)]"
+                  }
+                >
+                  {l.label}
+                </button>
+              ) : (
+                <Link
+                  key={l.label}
+                  to={l.to}
+                  onClick={() => setMenuOpen(false)}
+                  className={
+                    isActive(l.to)
+                      ? "font-bold text-[var(--ink)]"
+                      : "text-[var(--muted)] hover:text-[var(--ink)]"
+                  }
+                >
+                  {l.label}
+                </Link>
+              )
             ))}
             <div className="flex gap-5">
               <button
