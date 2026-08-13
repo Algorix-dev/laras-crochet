@@ -17,14 +17,11 @@ import { useAuth } from "../context/AuthContext";
 import CurrencySelector from "./CurrencySelector";
 import SearchOverlay from "./SearchOverlay";
 
-/* TIP: All nav links are visible. Shop, Custom Orders, and Contact
-   show "Coming Soon" toast until their pages are ready. To unlock,
-   replace the toast dispatch with navigate() in the onClick handler. */
 const LINKS = [
-  { label: "Shop", to: "/shop", gated: true },
-  { label: "Custom Orders", to: "/contact?flow=custom", gated: true },
+  { label: "Shop", to: "/shop" },
+  { label: "Custom Orders", to: "/contact?flow=custom" },
   { label: "About", to: "/about" },
-  { label: "Contact", to: "/contact", gated: true },
+  { label: "Contact", to: "/contact" },
 ];
 
 export default function Navbar() {
@@ -43,20 +40,11 @@ export default function Navbar() {
     return location.pathname + location.search === to;
   };
 
-  /* TIP: Bag and Wishlist are GATED behind Coming Soon. Clicking
-      shows a toast instead of navigating. When you're ready to
-      unlock them, replace the toast dispatch with navigate("/bag")
-      and navigate("/wishlist") respectively. */
-
-  /* Bag button — GATED: shows toast instead of navigating */
+  /* Bag button with count badge */
   const BagButton = () => (
     <button
       aria-label={`Bag, ${cartCount} items`}
-      onClick={() => {
-        window.dispatchEvent(
-          new CustomEvent('lara-toast', { detail: 'Bag is coming soon!' })
-        );
-      }}
+      onClick={() => navigate("/bag")}
       className="relative hover:text-[var(--maroon)]"
     >
       <ShoppingBag size={18} />
@@ -68,15 +56,11 @@ export default function Navbar() {
     </button>
   );
 
-  /* Wishlist button — GATED: shows toast instead of navigating */
+  /* Wishlist button with count badge */
   const WishlistButton = () => (
     <button
       aria-label={`Wishlist, ${wishlistCount} items`}
-      onClick={() => {
-        window.dispatchEvent(
-          new CustomEvent('lara-toast', { detail: 'Wishlist is coming soon!' })
-        );
-      }}
+      onClick={() => navigate("/wishlist")}
       className="relative hover:text-[var(--maroon)]"
     >
       <Heart size={18} />
@@ -100,35 +84,17 @@ export default function Navbar() {
           {/* Desktop nav links */}
           <nav className="hidden gap-8 text-sm uppercase md:flex">
             {LINKS.map((l) => (
-              l.gated ? (
-                <button
-                  key={l.label}
-                  onClick={() => {
-                    window.dispatchEvent(
-                      new CustomEvent('lara-toast', { detail: l.label + ' is coming soon!' })
-                    );
-                  }}
-                  className={
-                    isActive(l.to)
-                      ? "font-bold text-[var(--ink)]"
-                      : "text-[var(--muted)] hover:text-[var(--ink)]"
-                  }
-                >
-                  {l.label}
-                </button>
-              ) : (
-                <Link
-                  key={l.label}
-                  to={l.to}
-                  className={
-                    isActive(l.to)
-                      ? "font-bold text-[var(--ink)]"
-                      : "text-[var(--muted)] hover:text-[var(--ink)]"
-                  }
-                >
-                  {l.label}
-                </Link>
-              )
+              <Link
+                key={l.label}
+                to={l.to}
+                className={
+                  isActive(l.to)
+                    ? "font-bold text-[var(--ink)]"
+                    : "text-[var(--muted)] hover:text-[var(--ink)]"
+                }
+              >
+                {l.label}
+              </Link>
             ))}
           </nav>
 
@@ -162,37 +128,18 @@ export default function Navbar() {
         {menuOpen && (
           <nav className="flex flex-col gap-4 px-5 pb-6 text-sm uppercase md:hidden">
             {LINKS.map((l) => (
-              l.gated ? (
-                <button
-                  key={l.label}
-                  onClick={() => {
-                    window.dispatchEvent(
-                      new CustomEvent('lara-toast', { detail: l.label + ' is coming soon!' })
-                    );
-                    setMenuOpen(false);
-                  }}
-                  className={
-                    isActive(l.to)
-                      ? "font-bold text-[var(--ink)]"
-                      : "text-[var(--muted)] hover:text-[var(--ink)]"
-                  }
-                >
-                  {l.label}
-                </button>
-              ) : (
-                <Link
-                  key={l.label}
-                  to={l.to}
-                  onClick={() => setMenuOpen(false)}
-                  className={
-                    isActive(l.to)
-                      ? "font-bold text-[var(--ink)]"
-                      : "text-[var(--muted)] hover:text-[var(--ink)]"
-                  }
-                >
-                  {l.label}
-                </Link>
-              )
+              <Link
+                key={l.label}
+                to={l.to}
+                onClick={() => setMenuOpen(false)}
+                className={
+                  isActive(l.to)
+                    ? "font-bold text-[var(--ink)]"
+                    : "text-[var(--muted)] hover:text-[var(--ink)]"
+                }
+              >
+                {l.label}
+              </Link>
             ))}
             <div className="flex gap-5">
               <button

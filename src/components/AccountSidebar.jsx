@@ -11,14 +11,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import LogoutModal from './LogoutModal';
 
-/* TIP: Orders and Wishlist are GATED behind Coming Soon. They're
-    commented out so the sidebar only shows links to pages that
-    actually work. Uncomment when you unlock those routes in App.jsx. */
 const LINKS = [
   { key: 'about', label: 'About You', to: '/account' },
-  // { key: 'orders', label: 'Order History', to: '/account/orders' },  // ← GATED
+  { key: 'orders', label: 'Order History', to: '/account/orders' },
   { key: 'addresses', label: 'Addresses', to: '/account/addresses' },
-  // { key: 'wishlist', label: 'Wishlist', to: '/wishlist' },  // ← GATED
+  { key: 'wishlist', label: 'Wishlist', to: '/wishlist' },
 ];
 
 export default function AccountSidebar({ active }) {

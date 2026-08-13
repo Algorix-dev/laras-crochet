@@ -217,21 +217,18 @@ export default function BagDrawer({ open, onClose }) {
                 )}
               </div>
 
-              {/* Frequently Bought Together — GATED: links show toast */}
+              {/* Frequently Bought Together */}
               <section className="pt-7">
                 <h3 className="text-xs font-bold uppercase tracking-wide">
                   Frequently Bought Together
                 </h3>
                 <div className="mt-4 flex gap-3 overflow-x-auto">
                   {recommendations.map((product) => (
-                    <button
+                    <Link
                       key={product.id}
-                      onClick={() => {
-                        window.dispatchEvent(
-                          new CustomEvent('lara-toast', { detail: 'Product details coming soon!' })
-                        );
-                      }}
-                      className="relative w-28 shrink-0 text-left"
+                      to={`/product/${product.id}`}
+                      onClick={onClose}
+                      className="relative w-28 shrink-0"
                     >
                       <img
                         src={product.image}
@@ -245,33 +242,21 @@ export default function BagDrawer({ open, onClose }) {
                       <p className="text-[11px] text-[var(--muted)]">
                         {money(product.price)}
                       </p>
-                    </button>
+                    </Link>
                   ))}
                 </div>
               </section>
             </div>
 
-            {/* ---- Sticky Footer with Checkout Button — GATED ---- */}
+            {/* ---- Sticky Footer with Checkout Button ---- */}
             <footer className="border-t border-[var(--line)] bg-white px-5 py-4">
-              {/* TIP: Checkout is GATED. Clicking shows a toast instead of navigating.
-                  When you unlock /checkout in App.jsx, replace this button with:
-                  <Link to="/checkout" onClick={onClose} className="..."> */}
-              <button
-                onClick={() => {
-                  window.dispatchEvent(
-                    new CustomEvent('lara-toast', { detail: 'Checkout is coming soon!' })
-                  );
-                }}
-                className={`block w-full bg-[var(--ink)] py-4 text-center text-xs font-bold tracking-wider text-white ${!cartItems.length ? "pointer-events-none opacity-50" : ""}`}
-              >
+              <Link to="/checkout" onClick={onClose} className={`block w-full bg-[var(--ink)] py-4 text-center text-xs font-bold tracking-wider text-white ${!cartItems.length ? "pointer-events-none opacity-50" : ""}`}>
                 {money(finalTotal)} — CHECKOUT
-              </button>
+              </Link>
               <button
                 onClick={() => {
                   onClose();
-                  window.dispatchEvent(
-                    new CustomEvent('lara-toast', { detail: 'Bag page is coming soon!' })
-                  );
+                  navigate('/bag');
                 }}
                 className="mt-3 w-full text-xs uppercase underline"
               >

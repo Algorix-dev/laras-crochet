@@ -2,15 +2,13 @@
   TIP: This is the main routing file. We use react-router-dom's
   <Routes> and <Route> to define which component renders at each URL.
 
-  CURRENT MILESTONE (first installment for client):
-  - "/"         → redirects to /signin (landing page is gated)
-  - "/about"    → AboutPage (visible ✅)
-  - "/signin"   → SignInPage (visible ✅)
-  - Everything else → ComingSoon (gated 🔒)
+  - "/"         → HomePage (Hero + CategoryIntro + ProductGrid + CustomOrderBanner + Footer)
+  - "/product/:id" → ProductDetail (the detail page for any product)
+  - "*"         → HomePage (catch-all for unknown routes, so you never see a blank page)
 
   The Navbar renders outside <Routes> so it appears on every page.
 */
-import { Link, Route, Routes, useLocation, Navigate } from 'react-router-dom';
+import { Link, Route, Routes, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import CategoryIntro from './components/CategoryIntro';
@@ -32,10 +30,7 @@ import ComingSoon from './pages/ComingSoon';
 import { AuthProvider } from './context/AuthContext';
 import { useEffect, useState } from 'react';
 import { products, heroProduct } from './data/products';
-// TIP: API import removed — the api.js file isn't in the repo yet.
-// When you add src/api.js back, uncomment the line below and reconnect
-// HomePage to fetch live products:
-// import { getProducts, normalizeProduct } from './api';
+import { getProducts, normalizeProduct } from './api';
 
 /*
   TIP: Toast component — listens for a custom 'lara-toast' event
@@ -76,15 +71,32 @@ function HomePage() {
   // (images: [] is a flat list, not angles with flip flags). That's
   // a real gap, not an oversight — flagged in BACKEND_ROADMAP.md as
   // something to design once Lara has more real products to shoot
-  // from multiple angles. The grid below it, though, is static data
-  // now. When api.js is added back, reconnect live fetch below.
-  const [liveProducts] = useState(products);
+  // from multiple angles. The grid below it, though, is real data now.
+  const [liveProducts, setLiveProducts] = useState(products); // seed with static as an instant first paint
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getProducts()
+      .then((data) => {
+        if (data.length > 0) setLiveProducts(data.map(normalizeProduct));
+      })
+      .catch(() => {
+        // TIP: fails quietly to the static fallback already in state —
+        // if the backend's down, the homepage still shows SOMETHING
+        // rather than an empty grid or an error a visitor can't act on.
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <>
       <Hero product={heroProduct} />
       <CategoryIntro />
-      <ProductGrid products={liveProducts} />
+      {loading ? (
+        <p className="px-5 py-16 text-center text-sm text-[var(--muted)]">Loading products...</p>
+      ) : (
+        <ProductGrid products={liveProducts} />
+      )}
       {/* TIP: id="custom-orders" lets the nav link /#custom-orders
           scroll directly to this section */}
       <div id="custom-orders">
@@ -118,42 +130,25 @@ function ScrollToTop() {
   return null;
 }
 
-/* TIP: Pages where the Navbar should be hidden — these pages fill
-   the full viewport with their own background (sign-in flow, splash
-   screens, etc.). The Navbar is conditionally rendered based on the
-   current path. */
-const NO_NAVBAR_PATHS = ['/signin'];
-
-function ConditionalNavbar() {
-  const { pathname } = useLocation();
-  // TIP: Only show navbar if the current path is NOT in the hidden list
-  if (NO_NAVBAR_PATHS.includes(pathname)) return null;
-  return <Navbar />;
-}
-
 export default function App() {
   return (
     <AuthProvider>
       <ScrollToTop />
-      <ConditionalNavbar />
+      <Navbar />
       <Toast />
       <Routes>
-        {/* ===== ROUTES VISIBLE TO CLIENT (first installment) ===== */}
-        {/* TIP: "/" redirects to /signin so visitors see the sign-in
-            splash screen first — matching what the client requested.
-            When the landing page is ready, replace <Navigate /> with
-            <HomePage /> below. */}
-        <Route path="/" element={<Navigate to="/signin" replace />} />
+        {/* ===== ROUTES VISIBLE TO CLIENT ===== */}
+        <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
         <Route path="/signin" element={<SignInPage />} />
+        <Route path="/account" element={<AccountPage />} />
+        <Route path="/account/addresses" element={<AddressesPage />} />
 
         {/* ===== ROUTES HIDDEN (Coming Soon until you unlock them) ===== */}
         {/* TIP: To unlock a page, replace <ComingSoon /> with the real
-            component. For example, to unlock contact:
-            <Route path="/contact" element={<ContactPage />} /> */}
-        <Route path="/contact" element={<ComingSoon />} />
-        <Route path="/account" element={<ComingSoon />} />
-        <Route path="/account/addresses" element={<ComingSoon />} />
+            component. For example, to unlock the shop:
+            <Route path="/shop" element={<ShopPage />} /> */}
         <Route path="/shop" element={<ComingSoon />} />
         <Route path="/product/:id" element={<ComingSoon />} />
         <Route path="/checkout" element={<ComingSoon />} />
@@ -161,8 +156,8 @@ export default function App() {
         <Route path="/wishlist" element={<ComingSoon />} />
         <Route path="/bag" element={<ComingSoon />} />
 
-        {/* Catch-all: unknown routes redirect to sign-in */}
-        <Route path="*" element={<Navigate to="/signin" replace />} />
+        {/* Catch-all: unknown routes go to home so the user never sees a blank page */}
+        <Route path="*" element={<HomePage />} />
       </Routes>
     </AuthProvider>
   );

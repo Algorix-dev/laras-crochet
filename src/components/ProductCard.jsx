@@ -8,9 +8,7 @@
   navigation happens without a full page reload.
 */
 import { Heart, ShoppingBag } from 'lucide-react';
-/* TIP: Link is no longer used since product detail pages are gated —
-     we use <button> + toast instead. Remove this comment and restore
-     the import when you unlock /product/:id. */
+import { Link } from 'react-router-dom';
 import ProductPlaceholder from './ProductPlaceholder';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -33,24 +31,12 @@ export default function ProductCard({ product }) {
       product.sizes?.[0] || 'S'
     );
 
-  /* TIP: Product detail pages are GATED behind Coming Soon. Clicking
-       the image or name shows a toast instead of navigating. When you
-       unlock /product/:id in App.jsx, replace these buttons with <Link>
-       components pointing to `/product/${product.id}`. */
-
-  const handleViewProduct = (e) => {
-    e.preventDefault();
-    window.dispatchEvent(
-      new CustomEvent('lara-toast', { detail: 'Product details coming soon!' })
-    );
-  };
-
   return (
     <div className="group">
-      {/* Image — GATED: shows toast instead of navigating to product detail */}
-      <button
-        onClick={handleViewProduct}
-        className="relative block aspect-[3/4] overflow-hidden bg-[#efece6] text-left"
+      {/* Image — links to product detail page */}
+      <Link
+        to={`/product/${product.id}`}
+        className="relative block aspect-[3/4] overflow-hidden bg-[#efece6]"
       >
         {product.image ? (
           <img
@@ -78,19 +64,19 @@ export default function ProductCard({ product }) {
             fill={isInWishlist(product.id) ? 'currentColor' : 'none'}
           />
         </button>
-      </button>
+      </Link>
 
       {/* Name + price on the left, Add to Bag on the right */}
       <div className="mt-3 flex items-end justify-between">
-        <button
-          onClick={handleViewProduct}
-          className="text-sm text-left"
+        <Link
+          to={`/product/${product.id}`}
+          className="text-sm"
         >
           <div className="uppercase tracking-wide">{product.name}</div>
           <div className="text-[var(--muted)]">
             {formatPrice(product.price)}
           </div>
-        </button>
+        </Link>
 
         <button
           aria-label={`Add ${product.name} to bag`}
