@@ -7,24 +7,18 @@
   The drawer uses framer-motion's AnimatePresence to animate the
   panel sliding in/out and the backdrop fading in/out.
 */
-import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, Heart, Minus, Plus, Trash2, X } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import { products } from '../data/products';
-import { useCart } from '../context/CartContext';
-import { useCurrency } from '../context/CurrencyContext';
-import { useWishlist } from '../context/WishlistContext';
-
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown, Heart, Minus, Plus, Trash2, X } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { products } from "../data/products";
+import { useCart } from "../context/CartContext";
+import { useCurrency } from "../context/CurrencyContext";
+import { useWishlist } from "../context/WishlistContext";
 
 export default function BagDrawer({ open, onClose }) {
-  const {
-    cartItems,
-    cartCount,
-    cartTotal,
-    removeFromBag,
-    updateQuantity,
-  } = useCart();
+  const { cartItems, cartCount, cartTotal, removeFromBag, updateQuantity } =
+    useCart();
 
   const { formatPrice: money } = useCurrency();
   const { toggleWishlist } = useWishlist();
@@ -59,18 +53,15 @@ export default function BagDrawer({ open, onClose }) {
             role="dialog"
             aria-labelledby="bag-title"
             className="fixed inset-y-0 right-0 z-[61] flex w-full max-w-[420px] flex-col bg-white shadow-2xl"
-            initial={{ x: '100%' }}
+            initial={{ x: "100%" }}
             animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'tween', duration: 0.3 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "tween", duration: 0.3 }}
           >
             {/* ---- Header ---- */}
             <header className="border-b border-[var(--line)] px-5 py-5">
               <div className="flex items-center justify-between">
-                <h2
-                  id="bag-title"
-                  className="font-bold text-sm tracking-wide"
-                >
+                <h2 id="bag-title" className="font-bold text-sm tracking-wide">
                   MY BAG ({cartCount})
                 </h2>
                 <button aria-label="Close bag" onClick={onClose}>
@@ -129,7 +120,7 @@ export default function BagDrawer({ open, onClose }) {
                         </div>
 
                         <p className="mt-2 text-xs text-[var(--muted)]">
-                          Size: {item.selectedSize} · Color:{' '}
+                          Size: {item.selectedSize} · Color:{" "}
                           {item.selectedColor}
                         </p>
 
@@ -140,10 +131,7 @@ export default function BagDrawer({ open, onClose }) {
                               className="p-1.5"
                               aria-label="Decrease quantity"
                               onClick={() =>
-                                updateQuantity(
-                                  item.id,
-                                  item.quantity - 1
-                                )
+                                updateQuantity(item.id, item.quantity - 1)
                               }
                             >
                               <Minus size={13} />
@@ -155,10 +143,7 @@ export default function BagDrawer({ open, onClose }) {
                               className="p-1.5"
                               aria-label="Increase quantity"
                               onClick={() =>
-                                updateQuantity(
-                                  item.id,
-                                  item.quantity + 1
-                                )
+                                updateQuantity(item.id, item.quantity + 1)
                               }
                             >
                               <Plus size={13} />
@@ -201,7 +186,7 @@ export default function BagDrawer({ open, onClose }) {
                   Promo Code or Gift Card?
                   <ChevronDown
                     size={16}
-                    className={promoOpen ? 'rotate-180' : ''}
+                    className={promoOpen ? "rotate-180" : ""}
                   />
                 </button>
                 {promoOpen && (
@@ -217,18 +202,23 @@ export default function BagDrawer({ open, onClose }) {
                 )}
               </div>
 
-              {/* Frequently Bought Together */}
+              {/* Frequently Bought Together — GATED: links show toast */}
               <section className="pt-7">
                 <h3 className="text-xs font-bold uppercase tracking-wide">
                   Frequently Bought Together
                 </h3>
                 <div className="mt-4 flex gap-3 overflow-x-auto">
                   {recommendations.map((product) => (
-                    <Link
+                    <button
                       key={product.id}
-                      to={`/product/${product.id}`}
-                      onClick={onClose}
-                      className="relative w-28 shrink-0"
+                      onClick={() => {
+                        window.dispatchEvent(
+                          new CustomEvent("lara-toast", {
+                            detail: "Product details coming soon!",
+                          }),
+                        );
+                      }}
+                      className="relative w-28 shrink-0 text-left"
                     >
                       <img
                         src={product.image}
@@ -242,21 +232,37 @@ export default function BagDrawer({ open, onClose }) {
                       <p className="text-[11px] text-[var(--muted)]">
                         {money(product.price)}
                       </p>
-                    </Link>
+                    </button>
                   ))}
                 </div>
               </section>
             </div>
 
-            {/* ---- Sticky Footer with Checkout Button ---- */}
+            {/* ---- Sticky Footer with Checkout Button — GATED ---- */}
             <footer className="border-t border-[var(--line)] bg-white px-5 py-4">
-              <Link to="/checkout" onClick={onClose} className={`block w-full bg-[var(--ink)] py-4 text-center text-xs font-bold tracking-wider text-white ${!cartItems.length ? "pointer-events-none opacity-50" : ""}`}>
+              {/* TIP: Checkout is GATED. Clicking shows a toast instead of navigating.
+                  When you unlock /checkout in App.jsx, replace this button with:
+                  <Link to="/checkout" onClick={onClose} className="..."> */}
+              <button
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent("lara-toast", {
+                      detail: "Checkout is coming soon!",
+                    }),
+                  );
+                }}
+                className={`block w-full bg-[var(--ink)] py-4 text-center text-xs font-bold tracking-wider text-white ${!cartItems.length ? "pointer-events-none opacity-50" : ""}`}
+              >
                 {money(finalTotal)} — CHECKOUT
-              </Link>
+              </button>
               <button
                 onClick={() => {
                   onClose();
-                  navigate('/bag');
+                  window.dispatchEvent(
+                    new CustomEvent("lara-toast", {
+                      detail: "Bag page is coming soon!",
+                    }),
+                  );
                 }}
                 className="mt-3 w-full text-xs uppercase underline"
               >

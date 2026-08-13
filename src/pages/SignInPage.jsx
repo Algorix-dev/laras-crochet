@@ -1,28 +1,73 @@
 /*
-  TIP: This page is a state machine with three "steps":
-    'email'  → enter email (or use Google), validated live
-    'code'   → 6-digit code entry, with a resend countdown
-  A fourth in-between moment ("We've sent a code to X") is shown
-  briefly as a transition, matching her design, before the code
-  boxes appear.
+  TIP: Rebuilt against exact values pulled from Figma's Inspect
+  panel — fonts, hex colors, and pixel spacing below are not
+  estimates, they're the real numbers. This is the reference
+  pattern for how every other page gets rebuilt: real values in,
+  precise output out, rather than eyeballing a screenshot.
 
-  This mirrors real email-OTP sign-in flows (no password to remember —
-  just prove you own the email by entering a code sent to it).
+  Flow, per the spec:
+    'intro'  → branded splash: logo fades in, tagline appears,
+               then transitions into the form (this step was
+               missing from the original build entirely)
+    'email'  → enter email (or Google), validated live
+    'sending'→ "we sent a code to X" — shown for a full 8 seconds
+               per the spec's own animation-delay, not a quick blip
+    'code'   → 6-digit entry with a resend countdown
+
+  ⚠️ DEMO MODE: API calls are mocked so the sign-in flow works
+     without a backend. When you connect the real backend, replace
+     the mock functions with the real fetch calls (they're commented
+     out inside each handler for easy swap-back).
 */
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const RESEND_SECONDS = 53; // matches "Resend code in 53 secs" in her design
+const RESEND_SECONDS = 53; // spec: "Resend code in 53 secs"
+
+/* TIP: Mock API functions — these simulate the backend responses
+   so the sign-in flow works for demos. When the backend is ready,
+   replace these with the real fetch calls below each one. */
+
+/* MOCK: Simulates sending a verification code to the user's email.
+   In real mode, this calls POST /api/auth/customer/request-code */
+async function mockRequestCode(email) {
+  // Simulate network delay
+  await new Promise((resolve) => setTimeout(resolve, 800));
+  // In a real app, the backend would send an email here
+  console.log(`[MOCK] Verification code sent to ${email}: 123456`);
+  return { success: true };
+}
+
+/* MOCK: Simulates verifying the 6-digit code. Any 6-digit code
+   works in demo mode. In real mode, this calls
+   POST /api/auth/customer/verify-code */
+async function mockVerifyCode(email, code) {
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+    throw new Error("Invalid code — try again.");
+  }
+  // Return a mock user + token for demo purposes
+  return {
+    user: {
+      id: "demo-user-001",
+      email: email,
+      username: email.split("@")[0],
+      loyaltyStatus: "Guest",
+    },
+    token: "demo-jwt-token-" + Date.now(),
+  };
+}
 
 export default function SignInPage() {
-  const [step, setStep] = useState('email'); // 'email' | 'sending' | 'code'
-  const [email, setEmail] = useState('');
+  const [step, setStep] = useState("intro"); // 'intro' | 'email' | 'sending' | 'code'
+  const [introVisible, setIntroVisible] = useState(false);
+  const [email, setEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
-  const [code, setCode] = useState(['', '', '', '', '', '']);
+  const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const inputRefs = useRef([]);
@@ -33,13 +78,25 @@ export default function SignInPage() {
   const isValidEmail = EMAIL_REGEX.test(email);
   const showInvalid = emailTouched && email.length > 0 && !isValidEmail;
 
-  // TIP: the countdown for "Resend code in N secs". setInterval keeps
-  // running until the cleanup function (the returned function) runs —
-  // React calls that cleanup automatically when the component
-  // unmounts, or right before this effect re-runs. Without it, you'd
-  // stack up multiple intervals every time the step changes.
+  /* TIP: the splash sequence — spec shows two near-identical frames,
+     the first with the logo faded in (opacity building), the second
+     fully visible with the tagline "THEY THAT GET IT", then a
+     transition to the actual form after ~2.5s total. This is a
+     branded loading moment, not a functional step, so it's driven
+     by timers rather than user input. */
   useEffect(() => {
-    if (step !== 'code' || secondsLeft <= 0) return;
+    if (step !== "intro") return;
+    const fadeIn = setTimeout(() => setIntroVisible(true), 50);
+    const toForm = setTimeout(() => setStep("email"), 2500);
+    return () => {
+      clearTimeout(fadeIn);
+      clearTimeout(toForm);
+    };
+  }, [step]);
+
+  // Resend countdown — same pattern as before, values now match spec exactly
+  useEffect(() => {
+    if (step !== "code" || secondsLeft <= 0) return;
     const timer = setInterval(() => setSecondsLeft((s) => s - 1), 1000);
     return () => clearInterval(timer);
   }, [step, secondsLeft]);
@@ -50,59 +107,64 @@ export default function SignInPage() {
     if (!isValidEmail) return;
 
     setSubmitting(true);
-    setError('');
+    setError("");
     try {
+      /* DEMO MODE: using mock API. To switch to real backend, replace
+         the mockRequestCode line with the commented fetch block below. */
+      await mockRequestCode(email);
+
+      /* REAL MODE (uncomment when backend is ready):
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/customer/request-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
       if (!res.ok) throw new Error('Could not send code — try again.');
+      */
 
-      setStep('sending');
-      // TIP: brief transition screen ("We have sent a code to...")
-      // before showing the code boxes, matching her design's separate
-      // frame for that moment.
+      setStep("sending");
+      // TIP: spec's own animation-delay on this frame is 8000ms —
+      // a deliberately generous read time, not a quick flash.
       setTimeout(() => {
-        setStep('code');
+        setStep("code");
         setSecondsLeft(RESEND_SECONDS);
-      }, 1400);
+      }, 8000);
     } catch (err) {
       setError(err.message);
-    } finally {
       setSubmitting(false);
     }
   }
 
   function handleCodeChange(index, value) {
-    if (!/^\d?$/.test(value)) return; // only allow a single digit
+    if (!/^\d?$/.test(value)) return;
     const next = [...code];
     next[index] = value;
     setCode(next);
-    setError('');
+    setError("");
 
-    // TIP: auto-advance focus to the next box as soon as one is filled —
-    // this is why OTP inputs feel fast to use instead of clicking each box.
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
-    if (next.every((d) => d !== '')) {
-      verifyCode(next.join(''));
+    if (next.every((d) => d !== "")) {
+      verifyCode(next.join(""));
     }
   }
 
   function handleCodeKeyDown(index, e) {
-    // TIP: backspace on an empty box jumps back to the previous one,
-    // matching how every OTP input you've ever used behaves.
-    if (e.key === 'Backspace' && !code[index] && index > 0) {
+    if (e.key === "Backspace" && !code[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   }
 
   async function verifyCode(fullCode) {
     setSubmitting(true);
-    setError('');
+    setError("");
     try {
+      /* DEMO MODE: using mock API. To switch to real backend, replace
+         the mockVerifyCode line with the commented fetch block below. */
+      const data = await mockVerifyCode(email, fullCode);
+
+      /* REAL MODE (uncomment when backend is ready):
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/customer/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -110,13 +172,15 @@ export default function SignInPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Invalid code — try again.');
+      */
 
       login(data.user, data.token);
-      const redirectTo = new URLSearchParams(location.search).get('redirect') || '/account';
+      const redirectTo =
+        new URLSearchParams(location.search).get("redirect") || "/account";
       navigate(redirectTo);
     } catch (err) {
       setError(err.message);
-      setCode(['', '', '', '', '', '']);
+      setCode(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
     } finally {
       setSubmitting(false);
@@ -125,50 +189,81 @@ export default function SignInPage() {
 
   async function handleResend() {
     setSecondsLeft(RESEND_SECONDS);
-    setCode(['', '', '', '', '', '']);
+    setCode(["", "", "", "", "", ""]);
+    /* DEMO MODE: mock resend. Real mode fetch commented below. */
+    await mockRequestCode(email);
+
+    /* REAL MODE:
     await fetch(`${import.meta.env.VITE_API_URL}/api/auth/customer/request-code`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
     });
+    */
   }
 
   function handleGoogleSignIn() {
-    // TIP: Google Identity Services normally renders its own button
-    // and hands back an ID token, which then gets sent to the backend
-    // to verify. That setup needs a real Google Client ID from Google
-    // Cloud Console, so this is wired to a placeholder until that's
-    // configured — see server/README.md.
     window.dispatchEvent(
-      new CustomEvent('lara-toast', {
-        detail: 'Google Sign-In needs a Google Client ID to be configured first.',
-      })
+      new CustomEvent("lara-toast", {
+        detail:
+          "Google Sign-In needs a Google Client ID to be configured first.",
+      }),
+    );
+  }
+
+  // ── Intro splash ──────────────────────────────────────────────
+  if (step === "intro") {
+    return (
+      <section className="font-ui flex min-h-[80vh] flex-col items-center justify-center bg-[#FAFAFA] px-5 text-center">
+        <div
+          className="transition-opacity duration-[1500ms] ease-out"
+          style={{ opacity: introVisible ? 1 : 0 }}
+        >
+          {/* TIP: real logo PNG goes here once Teniayo sends it — the
+              script wordmark can't be reproduced in a web font. This
+              text is a placeholder standing in for that image. */}
+          <p className="font-display text-3xl italic text-[#404040]">
+            Lara's Crochet
+          </p>
+          <p className="mt-2 text-[20px] tracking-[0.7em] text-[#A3A3A3]">
+            THEY THAT GET IT
+          </p>
+        </div>
+      </section>
     );
   }
 
   return (
-    <section className="mx-auto flex min-h-[70vh] max-w-md flex-col items-center justify-center px-5 py-16 text-center">
-      <h1 className="font-display text-2xl italic mb-10">Lara's Crochet</h1>
+    <section className="font-ui mx-auto flex min-h-[80vh] max-w-md flex-col items-center justify-center bg-[#FAFAFA] px-5 py-16 text-center">
+      {/* Full logo — placeholder text until the real PNG arrives */}
+      <p className="mb-16 font-display text-2xl italic text-[#404040]">
+        Lara's Crochet
+      </p>
 
-      {step === 'email' && (
-        <form onSubmit={handleContinue} className="w-full">
-          <h2 className="text-sm font-bold mb-1">Sign In</h2>
-          <p className="text-xs text-[var(--muted)] mb-6">Sign in or create an account</p>
+      {step === "email" && (
+        <form onSubmit={handleContinue} className="w-full max-w-[457px]">
+          <h1 className="text-[20px] font-bold leading-[30px] tracking-[-0.04em] text-[#404040]">
+            Sign In
+          </h1>
+          <p className="mb-6 text-[14px] leading-5 text-[#737373]">
+            Sign in or create an account
+          </p>
 
           <button
             type="button"
             onClick={handleGoogleSignIn}
-            className="mb-4 flex w-full items-center justify-center gap-2 border border-[var(--line)] py-3 text-sm hover:bg-black/[0.02]"
+            className="mb-4 flex w-full items-center justify-center gap-3 border border-[#A3A3A3] bg-[#FFFCFC] py-4 text-[16px] font-semibold leading-6 text-[#564345] hover:bg-black/[0.02]"
           >
-            {/* Simple inline "G" mark — avoids pulling in a brand asset */}
-            <span className="font-bold text-[#4285F4]">G</span>
+            <span aria-hidden="true" className="font-bold text-[#4285F4]">
+              G
+            </span>
             Sign in with Google
           </button>
 
-          <div className="mb-4 flex items-center gap-3 text-[10px] uppercase text-[var(--muted)]">
-            <span className="h-px flex-1 bg-[var(--line)]" />
-            or
-            <span className="h-px flex-1 bg-[var(--line)]" />
+          <div className="mb-4 flex items-center gap-3 text-[16px] font-semibold leading-6 text-[#737373]">
+            <span className="h-px flex-1 bg-[#D4D4D4]" />
+            OR
+            <span className="h-px flex-1 bg-[#D4D4D4]" />
           </div>
 
           <div className="relative">
@@ -178,54 +273,67 @@ export default function SignInPage() {
               onChange={(e) => setEmail(e.target.value)}
               onBlur={() => setEmailTouched(true)}
               placeholder="Email"
-              className={`w-full border px-3 py-3 text-sm outline-none ${
+              className={`h-16 w-full border px-4 text-[16px] leading-6 outline-none placeholder:text-[#A3A3A3] ${
                 showInvalid
-                  ? 'border-red-400 text-red-600'
-                  : 'border-[var(--line)] focus:border-[var(--ink)]'
+                  ? "border-red-400 text-red-600"
+                  : emailTouched && isValidEmail
+                    ? "border-emerald-500"
+                    : "border-[#D4D4D4] focus:border-[#404040]"
               }`}
             />
-            {/* Valid-email checkmark, matching her "Valid email address" frame */}
             {emailTouched && isValidEmail && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600 text-sm">✓</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-600">
+                ✓
+              </span>
             )}
             {showInvalid && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 text-sm">✕</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-red-500">
+                ✕
+              </span>
             )}
           </div>
           {showInvalid && (
-            <p className="mt-1 text-left text-[11px] text-red-500">Invalid email address</p>
+            <p className="mt-1 text-left text-[12px] text-red-500">
+              Invalid email address
+            </p>
           )}
-          {error && <p className="mt-2 text-[11px] text-red-500">{error}</p>}
+          {error && <p className="mt-2 text-[12px] text-red-500">{error}</p>}
 
           <button
             type="submit"
             disabled={submitting}
-            className="mt-4 w-full bg-[var(--ink)] py-3 text-sm text-white uppercase tracking-wide hover:bg-[var(--maroon)] disabled:opacity-50"
+            className="mt-4 w-full bg-[#404040] py-3 text-sm uppercase tracking-wide text-white hover:bg-[#564345] disabled:opacity-50"
           >
-            {submitting ? 'Sending...' : 'Continue'}
+            {submitting ? "Sending..." : "Continue"}
           </button>
 
-          <p className="mt-6 text-[10px] leading-relaxed text-[var(--muted)]">
-            By continuing, you agree to receive recurring, automated marketing messages from
-            SMS40 and agree to our Terms of Service and Privacy Policy.
+          <p className="mt-6 text-[16px] leading-6 text-[#737373]">
+            By continuing, you agree to receive recurring, automated marketing
+            messages from Lara's Crochet and agree to our Terms of Service and
+            Privacy Policy.
           </p>
         </form>
       )}
 
-      {step === 'sending' && (
-        <p className="text-sm text-[var(--muted)]">
-          We have sent a code to <strong>{email}</strong>
+      {step === "sending" && (
+        <p className="max-w-[648px] text-[24px] font-medium leading-8 text-[#737373]">
+          We have sent a code to{" "}
+          <strong className="text-[#404040]">{email}</strong>
           <br />
           Kindly check and input code to verify your email address.
         </p>
       )}
 
-      {step === 'code' && (
-        <div className="w-full">
-          <h2 className="text-sm font-bold mb-1">Enter Code</h2>
-          <p className="text-xs text-[var(--muted)] mb-6">Sent to {email}</p>
+      {step === "code" && (
+        <div className="w-full max-w-[412px]">
+          <h1 className="text-[20px] font-bold leading-[30px] tracking-[-0.04em] text-[#404040]">
+            Enter Code
+          </h1>
+          <p className="mb-6 text-[14px] leading-5 text-[#737373]">
+            Sent to {email}
+          </p>
 
-          <div className="flex justify-center gap-2">
+          <div className="flex justify-center gap-[10px]">
             {code.map((digit, i) => (
               <input
                 key={i}
@@ -236,23 +344,27 @@ export default function SignInPage() {
                 value={digit}
                 onChange={(e) => handleCodeChange(i, e.target.value)}
                 onKeyDown={(e) => handleCodeKeyDown(i, e)}
-                className="h-12 w-10 border border-[var(--line)] text-center text-lg outline-none focus:border-[var(--ink)]"
+                className="h-16 w-[60px] border-2 border-[#D4D4D4] text-center text-lg outline-none focus:border-[#404040]"
               />
             ))}
           </div>
-          {error && <p className="mt-3 text-[11px] text-red-500">{error}</p>}
+          {error && <p className="mt-3 text-[12px] text-red-500">{error}</p>}
 
           <button
             onClick={handleResend}
             disabled={secondsLeft > 0}
-            className="mt-4 text-[11px] underline disabled:no-underline disabled:text-[var(--muted)]"
+            className="mt-8 text-[16px] font-semibold leading-6 text-[#737373] underline disabled:no-underline"
           >
-            {secondsLeft > 0 ? `Resend code in ${secondsLeft} secs` : 'Resend code'}
+            {secondsLeft > 0
+              ? `Resend code in ${secondsLeft} secs`
+              : "Resend code"}
           </button>
         </div>
       )}
 
-      <p className="mt-10 text-[10px] text-[var(--muted)] underline">Privacy Policy</p>
+      <p className="mt-10 text-[16px] leading-6 text-[#404040] underline">
+        Privacy Policy
+      </p>
     </section>
   );
 }

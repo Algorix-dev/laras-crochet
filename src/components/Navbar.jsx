@@ -17,8 +17,11 @@ import { useAuth } from "../context/AuthContext";
 import CurrencySelector from "./CurrencySelector";
 import SearchOverlay from "./SearchOverlay";
 
+/* TIP: Only links to VISIBLE pages go here. Shop is gated behind
+    Coming Soon until you're ready to unlock it. To add it back,
+    just uncomment the line below when the shop is built. */
 const LINKS = [
-  { label: "Shop", to: "/shop" },
+  // { label: "Shop", to: "/shop" },  // ← GATED: uncomment when shop is ready
   { label: "Custom Orders", to: "/contact?flow=custom" },
   { label: "About", to: "/about" },
   { label: "Contact", to: "/contact" },
@@ -40,11 +43,20 @@ export default function Navbar() {
     return location.pathname + location.search === to;
   };
 
-  /* Bag button with count badge */
+  /* TIP: Bag and Wishlist are GATED behind Coming Soon. Clicking
+      shows a toast instead of navigating. When you're ready to
+      unlock them, replace the toast dispatch with navigate("/bag")
+      and navigate("/wishlist") respectively. */
+
+  /* Bag button — GATED: shows toast instead of navigating */
   const BagButton = () => (
     <button
       aria-label={`Bag, ${cartCount} items`}
-      onClick={() => navigate("/bag")}
+      onClick={() => {
+        window.dispatchEvent(
+          new CustomEvent("lara-toast", { detail: "Bag is coming soon!" }),
+        );
+      }}
       className="relative hover:text-[var(--maroon)]"
     >
       <ShoppingBag size={18} />
@@ -56,11 +68,15 @@ export default function Navbar() {
     </button>
   );
 
-  /* Wishlist button with count badge */
+  /* Wishlist button — GATED: shows toast instead of navigating */
   const WishlistButton = () => (
     <button
       aria-label={`Wishlist, ${wishlistCount} items`}
-      onClick={() => navigate("/wishlist")}
+      onClick={() => {
+        window.dispatchEvent(
+          new CustomEvent("lara-toast", { detail: "Wishlist is coming soon!" }),
+        );
+      }}
       className="relative hover:text-[var(--maroon)]"
     >
       <Heart size={18} />
