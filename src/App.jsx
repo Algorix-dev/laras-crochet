@@ -10,29 +10,32 @@
 
   The Navbar renders outside <Routes> so it appears on every page.
 */
-import { Link, Route, Routes, useLocation, Navigate } from "react-router-dom";
-import Navbar from "./components/Navbar";
-import Hero from "./components/Hero";
-import CategoryIntro from "./components/CategoryIntro";
-import ProductGrid from "./components/ProductGrid";
-import CustomOrderBanner from "./components/CustomOrderBanner";
-import Footer from "./components/Footer";
-import ProductDetail from "./pages/ProductDetail";
-import ShopPage from "./pages/ShopPage";
-import AboutPage from "./pages/AboutPage";
-import CheckoutPage from "./pages/CheckoutPage";
-import ContactPage from "./pages/ContactPage";
-import SignInPage from "./pages/SignInPage";
-import AccountPage from "./pages/AccountPage";
-import WishlistPage from "./pages/WishlistPage";
-import OrderHistoryPage from "./pages/OrderHistoryPage";
-import AddressesPage from "./pages/AddressesPage";
-import MyBagPage from "./pages/MyBagPage";
-import ComingSoon from "./pages/ComingSoon";
-import { AuthProvider } from "./context/AuthContext";
-import { useEffect, useState } from "react";
-import { products, heroProduct } from "./data/products";
-import { getProducts, normalizeProduct } from "./api";
+import { Link, Route, Routes, useLocation, Navigate } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Hero from './components/Hero';
+import CategoryIntro from './components/CategoryIntro';
+import ProductGrid from './components/ProductGrid';
+import CustomOrderBanner from './components/CustomOrderBanner';
+import Footer from './components/Footer';
+import ProductDetail from './pages/ProductDetail';
+import ShopPage from './pages/ShopPage';
+import AboutPage from './pages/AboutPage';
+import CheckoutPage from './pages/CheckoutPage';
+import ContactPage from './pages/ContactPage';
+import SignInPage from './pages/SignInPage';
+import AccountPage from './pages/AccountPage';
+import WishlistPage from './pages/WishlistPage';
+import OrderHistoryPage from './pages/OrderHistoryPage';
+import AddressesPage from './pages/AddressesPage';
+import MyBagPage from './pages/MyBagPage';
+import ComingSoon from './pages/ComingSoon';
+import { AuthProvider } from './context/AuthContext';
+import { useEffect, useState } from 'react';
+import { products, heroProduct } from './data/products';
+// TIP: API import removed — the api.js file isn't in the repo yet.
+// When you add src/api.js back, uncomment the line below and reconnect
+// HomePage to fetch live products:
+// import { getProducts, normalizeProduct } from './api';
 
 /*
   TIP: Toast component — listens for a custom 'lara-toast' event
@@ -43,15 +46,15 @@ import { getProducts, normalizeProduct } from "./api";
   a toast library.
 */
 function Toast() {
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     const handleToast = (e) => {
       setMessage(e.detail);
-      window.setTimeout(() => setMessage(""), 2500);
+      window.setTimeout(() => setMessage(''), 2500);
     };
-    window.addEventListener("lara-toast", handleToast);
-    return () => window.removeEventListener("lara-toast", handleToast);
+    window.addEventListener('lara-toast', handleToast);
+    return () => window.removeEventListener('lara-toast', handleToast);
   }, []);
 
   if (!message) return null;
@@ -73,34 +76,15 @@ function HomePage() {
   // (images: [] is a flat list, not angles with flip flags). That's
   // a real gap, not an oversight — flagged in BACKEND_ROADMAP.md as
   // something to design once Lara has more real products to shoot
-  // from multiple angles. The grid below it, though, is real data now.
-  const [liveProducts, setLiveProducts] = useState(products); // seed with static as an instant first paint
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    getProducts()
-      .then((data) => {
-        if (data.length > 0) setLiveProducts(data.map(normalizeProduct));
-      })
-      .catch(() => {
-        // TIP: fails quietly to the static fallback already in state —
-        // if the backend's down, the homepage still shows SOMETHING
-        // rather than an empty grid or an error a visitor can't act on.
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  // from multiple angles. The grid below it, though, is static data
+  // now. When api.js is added back, reconnect live fetch below.
+  const [liveProducts] = useState(products);
 
   return (
     <>
       <Hero product={heroProduct} />
       <CategoryIntro />
-      {loading ? (
-        <p className="px-5 py-16 text-center text-sm text-[var(--muted)]">
-          Loading products...
-        </p>
-      ) : (
-        <ProductGrid products={liveProducts} />
-      )}
+      <ProductGrid products={liveProducts} />
       {/* TIP: id="custom-orders" lets the nav link /#custom-orders
           scroll directly to this section */}
       <div id="custom-orders">
@@ -110,8 +94,7 @@ function HomePage() {
       <section id="contact" className="px-5 py-16 text-center">
         <h2 className="font-display text-4xl mb-3">Get in Touch</h2>
         <p className="text-sm text-[var(--muted)] max-w-md mx-auto mb-6">
-          Have an enquiry or want to request a custom made-to-order crochet
-          piece? Lara is here to help.
+          Have an enquiry or want to request a custom made-to-order crochet piece? Lara is here to help.
         </p>
         <Link
           to="/contact"

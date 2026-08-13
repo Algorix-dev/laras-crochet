@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=Yellowtail&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=Yellowtail&display=swap');
 @import "tailwindcss";
 
 /* -----------------------------------------------------------
@@ -32,6 +32,15 @@ body {
 
 .font-display {
   font-family: 'Instrument Serif', serif;
+}
+
+/* TIP: scoped utility, not a change to body's default font. Pages
+   being rebuilt to exact Figma spec (starting with Sign In) use DM
+   Sans per the actual design file — applying it only where confirmed
+   avoids silently changing every other not-yet-rebuilt page's font
+   before it's been checked against its own spec. */
+.font-ui {
+  font-family: 'DM Sans', sans-serif;
 }
 
 /* Utility for the mobile horizontal scroll strip in the custom

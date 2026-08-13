@@ -55,7 +55,7 @@ export default function Navbar() {
       aria-label={`Bag, ${cartCount} items`}
       onClick={() => {
         window.dispatchEvent(
-          new CustomEvent("lara-toast", { detail: "Bag is coming soon!" }),
+          new CustomEvent('lara-toast', { detail: 'Bag is coming soon!' })
         );
       }}
       className="relative hover:text-[var(--maroon)]"
@@ -75,7 +75,7 @@ export default function Navbar() {
       aria-label={`Wishlist, ${wishlistCount} items`}
       onClick={() => {
         window.dispatchEvent(
-          new CustomEvent("lara-toast", { detail: "Wishlist is coming soon!" }),
+          new CustomEvent('lara-toast', { detail: 'Wishlist is coming soon!' })
         );
       }}
       className="relative hover:text-[var(--maroon)]"

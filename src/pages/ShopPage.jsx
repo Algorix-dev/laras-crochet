@@ -10,8 +10,19 @@
   page) decides what data to pass down, the child (ProductGrid) just
   renders whatever it's given.
 */
-import { useState } from 'react';
-import { products, CATEGORIES } from '../data/products';
+/*
+  TIP: This page now fetches from the live database instead of the
+  static products.js file. Category filtering moved server-side too —
+  GET /api/products?category=dresses does the filtering in the
+  database query, so the browser only ever downloads the products
+  it's actually going to show, instead of fetching everything and
+  filtering client-side (which is what the old version did with a
+  local array — fine for 3 hardcoded items, wasteful once Lara has
+  a real catalog).
+*/
+import { useEffect, useState } from 'react';
+import { CATEGORIES } from '../data/products';
+import { getProducts, normalizeProduct } from '../api';
 import ProductGrid from '../components/ProductGrid';
 
 // TIP: turns 'two-pieces' into 'Two Pieces' for display, so the data
@@ -24,16 +35,23 @@ const formatLabel = (slug) =>
     .join(' ');
 
 export default function ShopPage() {
-  // TIP: 'all' is the default tab — no category selected means show
-  // everything. Kept as a string rather than null/undefined so the
-  // comparison in the filter below and the "is this tab active"
-  // check are both simple equality checks.
   const [activeCategory, setActiveCategory] = useState('all');
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const filteredProducts =
-    activeCategory === 'all'
-      ? products
-      : products.filter((p) => p.category === activeCategory);
+  // TIP: this effect re-runs every time activeCategory changes,
+  // because activeCategory is in the dependency array below. Click
+  // a different tab → state changes → effect re-fires → new fetch
+  // with the new category in the query string.
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    getProducts(activeCategory)
+      .then((data) => setProducts(data.map(normalizeProduct)))
+      .catch(() => setError('Could not load products — check your connection and try again.'))
+      .finally(() => setLoading(false));
+  }, [activeCategory]);
 
   return (
     <section className="max-w-7xl mx-auto px-5 md:px-8 pt-10">
@@ -73,16 +91,18 @@ export default function ShopPage() {
         ))}
       </div>
 
-      {/* TIP: reusing ProductGrid here instead of copy-pasting the
-          grid markup is the whole point of having pulled it into its
-          own component earlier — one place to fix bugs/tweak spacing,
-          and it stays in sync on both the homepage and this page. */}
-      {filteredProducts.length > 0 ? (
-        <ProductGrid products={filteredProducts} />
+      {/* TIP: three distinct states now instead of one — loading,
+          error, and empty each need their own message so the person
+          browsing always understands what's happening, rather than
+          a blank grid that looks the same whether it's still
+          fetching or genuinely has nothing to show. */}
+      {loading ? (
+        <p className="pb-24 text-sm text-[var(--muted)]">Loading products...</p>
+      ) : error ? (
+        <p className="pb-24 text-sm text-red-500">{error}</p>
+      ) : products.length > 0 ? (
+        <ProductGrid products={products} />
       ) : (
-        // TIP: this is a tiny taste of "various states" from her
-        // list — an empty state so the page doesn't just go blank
-        // if a category has zero products yet.
         <p className="pb-24 text-sm text-[var(--muted)]">
           No products in this category yet — check back soon.
         </p>

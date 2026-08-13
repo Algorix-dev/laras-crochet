@@ -19,9 +19,9 @@
      the mock functions with the real fetch calls (they're commented
      out inside each handler for easy swap-back).
 */
-import { useEffect, useRef, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RESEND_SECONDS = 53; // spec: "Resend code in 53 secs"
@@ -46,30 +46,30 @@ async function mockRequestCode(email) {
 async function mockVerifyCode(email, code) {
   await new Promise((resolve) => setTimeout(resolve, 600));
   if (code.length !== 6 || !/^\d{6}$/.test(code)) {
-    throw new Error("Invalid code — try again.");
+    throw new Error('Invalid code — try again.');
   }
   // Return a mock user + token for demo purposes
   return {
     user: {
-      id: "demo-user-001",
+      id: 'demo-user-001',
       email: email,
-      username: email.split("@")[0],
-      loyaltyStatus: "Guest",
+      username: email.split('@')[0],
+      loyaltyStatus: 'Guest',
     },
-    token: "demo-jwt-token-" + Date.now(),
+    token: 'demo-jwt-token-' + Date.now(),
   };
 }
 
 export default function SignInPage() {
-  const [step, setStep] = useState("intro"); // 'intro' | 'email' | 'sending' | 'code'
+  const [step, setStep] = useState('intro'); // 'intro' | 'email' | 'sending' | 'code'
   const [introVisible, setIntroVisible] = useState(false);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
   const [emailTouched, setEmailTouched] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false); // TIP: tracks focus for border styling
-  const [code, setCode] = useState(["", "", "", "", "", ""]);
+  const [code, setCode] = useState(['', '', '', '', '', '']);
   const [codeFocused, setCodeFocused] = useState(-1); // TIP: which code box is focused (-1 = none)
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const inputRefs = useRef([]);
@@ -87,9 +87,9 @@ export default function SignInPage() {
      branded loading moment, not a functional step, so it's driven
      by timers rather than user input. */
   useEffect(() => {
-    if (step !== "intro") return;
+    if (step !== 'intro') return;
     const fadeIn = setTimeout(() => setIntroVisible(true), 50);
-    const toForm = setTimeout(() => setStep("email"), 2500);
+    const toForm = setTimeout(() => setStep('email'), 2500);
     return () => {
       clearTimeout(fadeIn);
       clearTimeout(toForm);
@@ -98,7 +98,7 @@ export default function SignInPage() {
 
   // Resend countdown — same pattern as before, values now match spec exactly
   useEffect(() => {
-    if (step !== "code" || secondsLeft <= 0) return;
+    if (step !== 'code' || secondsLeft <= 0) return;
     const timer = setInterval(() => setSecondsLeft((s) => s - 1), 1000);
     return () => clearInterval(timer);
   }, [step, secondsLeft]);
@@ -109,7 +109,7 @@ export default function SignInPage() {
     if (!isValidEmail) return;
 
     setSubmitting(true);
-    setError("");
+    setError('');
     try {
       /* DEMO MODE: using mock API. To switch to real backend, replace
          the mockRequestCode line with the commented fetch block below. */
@@ -124,11 +124,11 @@ export default function SignInPage() {
       if (!res.ok) throw new Error('Could not send code — try again.');
       */
 
-      setStep("sending");
+      setStep('sending');
       // TIP: spec's own animation-delay on this frame is 8000ms —
       // a deliberately generous read time, not a quick flash.
       setTimeout(() => {
-        setStep("code");
+        setStep('code');
         setSecondsLeft(RESEND_SECONDS);
       }, 8000);
     } catch (err) {
@@ -142,25 +142,25 @@ export default function SignInPage() {
     const next = [...code];
     next[index] = value;
     setCode(next);
-    setError("");
+    setError('');
 
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
-    if (next.every((d) => d !== "")) {
-      verifyCode(next.join(""));
+    if (next.every((d) => d !== '')) {
+      verifyCode(next.join(''));
     }
   }
 
   function handleCodeKeyDown(index, e) {
-    if (e.key === "Backspace" && !code[index] && index > 0) {
+    if (e.key === 'Backspace' && !code[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   }
 
   async function verifyCode(fullCode) {
     setSubmitting(true);
-    setError("");
+    setError('');
     try {
       /* DEMO MODE: using mock API. To switch to real backend, replace
          the mockVerifyCode line with the commented fetch block below. */
@@ -177,12 +177,11 @@ export default function SignInPage() {
       */
 
       login(data.user, data.token);
-      const redirectTo =
-        new URLSearchParams(location.search).get("redirect") || "/account";
+      const redirectTo = new URLSearchParams(location.search).get('redirect') || '/account';
       navigate(redirectTo);
     } catch (err) {
       setError(err.message);
-      setCode(["", "", "", "", "", ""]);
+      setCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
     } finally {
       setSubmitting(false);
@@ -191,7 +190,7 @@ export default function SignInPage() {
 
   async function handleResend() {
     setSecondsLeft(RESEND_SECONDS);
-    setCode(["", "", "", "", "", ""]);
+    setCode(['', '', '', '', '', '']);
     /* DEMO MODE: mock resend. Real mode fetch commented below. */
     await mockRequestCode(email);
 
@@ -206,15 +205,14 @@ export default function SignInPage() {
 
   function handleGoogleSignIn() {
     window.dispatchEvent(
-      new CustomEvent("lara-toast", {
-        detail:
-          "Google Sign-In needs a Google Client ID to be configured first.",
-      }),
+      new CustomEvent('lara-toast', {
+        detail: 'Google Sign-In needs a Google Client ID to be configured first.',
+      })
     );
   }
 
   // ── Intro splash ──────────────────────────────────────────────
-  if (step === "intro") {
+  if (step === 'intro') {
     return (
       <section className="font-ui flex min-h-[80vh] flex-col items-center justify-center bg-[#FAFAFA] px-5 text-center">
         <div
@@ -224,12 +222,8 @@ export default function SignInPage() {
           {/* TIP: real logo PNG goes here once Teniayo sends it — the
               script wordmark can't be reproduced in a web font. This
               text is a placeholder standing in for that image. */}
-          <p className="font-display text-3xl italic text-[#404040]">
-            Lara's Crochet
-          </p>
-          <p className="mt-2 text-[20px] tracking-[0.7em] text-[#A3A3A3]">
-            THEY THAT GET IT
-          </p>
+          <p className="font-display text-3xl italic text-[#404040]">Lara's Crochet</p>
+          <p className="mt-2 text-[20px] tracking-[0.7em] text-[#A3A3A3]">THEY THAT GET IT</p>
         </div>
       </section>
     );
@@ -238,27 +232,21 @@ export default function SignInPage() {
   return (
     <section className="font-ui mx-auto flex min-h-[80vh] max-w-md flex-col items-center justify-center bg-[#FAFAFA] px-5 py-16 text-center">
       {/* Full logo — placeholder text until the real PNG arrives */}
-      <p className="mb-16 font-display text-2xl italic text-[#404040]">
-        Lara's Crochet
-      </p>
+      <p className="mb-16 font-display text-2xl italic text-[#404040]">Lara's Crochet</p>
 
-      {step === "email" && (
+      {step === 'email' && (
         <form onSubmit={handleContinue} className="w-full max-w-[457px]">
           <h1 className="text-[20px] font-bold leading-[30px] tracking-[-0.04em] text-[#404040]">
             Sign In
           </h1>
-          <p className="mb-6 text-[14px] leading-5 text-[#737373]">
-            Sign in or create an account
-          </p>
+          <p className="mb-6 text-[14px] leading-5 text-[#737373]">Sign in or create an account</p>
 
           <button
             type="button"
             onClick={handleGoogleSignIn}
             className="mb-4 flex w-full items-center justify-center gap-3 border border-[#A3A3A3] bg-[#FFFCFC] py-4 text-[16px] font-semibold leading-6 text-[#564345] hover:bg-black/[0.02]"
           >
-            <span aria-hidden="true" className="font-bold text-[#4285F4]">
-              G
-            </span>
+            <span aria-hidden="true" className="font-bold text-[#4285F4]">G</span>
             Sign in with Google
           </button>
 
@@ -274,60 +262,36 @@ export default function SignInPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onFocus={() => setEmailFocused(true)}
-              onBlur={() => {
-                setEmailTouched(true);
-                setEmailFocused(false);
-              }}
+              onBlur={() => { setEmailTouched(true); setEmailFocused(false); }}
               placeholder="Email"
               className={`h-16 w-full border px-4 text-[16px] leading-6 outline-none placeholder:text-[#A3A3A3] transition-colors duration-200 ${
                 showInvalid
-                  ? "border-red-400 bg-red-50/30 text-red-600"
+                  ? 'border-red-400 bg-red-50/30 text-red-600'
                   : emailTouched && isValidEmail
-                    ? "border-emerald-500 bg-emerald-50/20"
-                    : emailFocused
-                      ? "border-[#404040]"
-                      : "border-[#D4D4D4]"
+                  ? 'border-emerald-500 bg-emerald-50/20'
+                  : emailFocused
+                  ? 'border-[#404040]'
+                  : 'border-[#D4D4D4]'
               }`}
             />
             {submitting && (
               /* TIP: spinner icon shown on the right while the code is being sent */
               <span className="absolute right-4 top-1/2 -translate-y-1/2">
-                <svg
-                  className="h-5 w-5 animate-spin text-[#A3A3A3]"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
+                <svg className="h-5 w-5 animate-spin text-[#A3A3A3]" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
               </span>
             )}
             {!submitting && emailTouched && isValidEmail && (
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-600">
-                ✓
-              </span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-600">✓</span>
             )}
             {!submitting && showInvalid && (
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-red-500">
-                ✕
-              </span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-red-500">✕</span>
             )}
           </div>
           {showInvalid && (
-            <p className="mt-1 text-left text-[12px] text-red-500">
-              Invalid email address
-            </p>
+            <p className="mt-1 text-left text-[12px] text-red-500">Invalid email address</p>
           )}
           {error && <p className="mt-2 text-[12px] text-red-500">{error}</p>}
 
@@ -336,34 +300,30 @@ export default function SignInPage() {
             disabled={submitting}
             className="mt-4 w-full bg-[#404040] py-3 text-sm uppercase tracking-wide text-white hover:bg-[#564345] disabled:opacity-50"
           >
-            {submitting ? "Sending..." : "Continue"}
+            {submitting ? 'Sending...' : 'Continue'}
           </button>
 
           <p className="mt-6 text-[16px] leading-6 text-[#737373]">
-            By continuing, you agree to receive recurring, automated marketing
-            messages from Lara's Crochet and agree to our Terms of Service and
-            Privacy Policy.
+            By continuing, you agree to receive recurring, automated marketing messages from
+            Lara's Crochet and agree to our Terms of Service and Privacy Policy.
           </p>
         </form>
       )}
 
-      {step === "sending" && (
+      {step === 'sending' && (
         <p className="max-w-[648px] text-[24px] font-medium leading-8 text-[#737373]">
-          We have sent a code to{" "}
-          <strong className="text-[#404040]">{email}</strong>
+          We have sent a code to <strong className="text-[#404040]">{email}</strong>
           <br />
           Kindly check and input code to verify your email address.
         </p>
       )}
 
-      {step === "code" && (
+      {step === 'code' && (
         <div className="w-full max-w-[412px]">
           <h1 className="text-[20px] font-bold leading-[30px] tracking-[-0.04em] text-[#404040]">
             Enter Code
           </h1>
-          <p className="mb-6 text-[14px] leading-5 text-[#737373]">
-            Sent to {email}
-          </p>
+          <p className="mb-6 text-[14px] leading-5 text-[#737373]">Sent to {email}</p>
 
           <div className="flex justify-center gap-[10px]">
             {code.map((digit, i) => (
@@ -379,7 +339,9 @@ export default function SignInPage() {
                 onFocus={() => setCodeFocused(i)}
                 onBlur={() => setCodeFocused(-1)}
                 className={`h-16 w-[60px] border-2 text-center text-lg outline-none transition-colors duration-200 ${
-                  codeFocused === i ? "border-[#404040]" : "border-[#D4D4D4]"
+                  codeFocused === i
+                    ? 'border-[#404040]'
+                    : 'border-[#D4D4D4]'
                 }`}
               />
             ))}
@@ -391,16 +353,12 @@ export default function SignInPage() {
             disabled={secondsLeft > 0}
             className="mt-8 text-[16px] font-semibold leading-6 text-[#737373] underline disabled:no-underline"
           >
-            {secondsLeft > 0
-              ? `Resend code in ${secondsLeft} secs`
-              : "Resend code"}
+            {secondsLeft > 0 ? `Resend code in ${secondsLeft} secs` : 'Resend code'}
           </button>
         </div>
       )}
 
-      <p className="mt-10 text-[16px] leading-6 text-[#404040] underline">
-        Privacy Policy
-      </p>
+      <p className="mt-10 text-[16px] leading-6 text-[#404040] underline">Privacy Policy</p>
     </section>
   );
 }

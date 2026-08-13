@@ -6,18 +6,18 @@
   logic into all three, one component takes an `active` prop and
   every page renders <AccountSidebar active="orders" /> etc.
 */
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import LogoutModal from "./LogoutModal";
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import LogoutModal from './LogoutModal';
 
 /* TIP: Orders and Wishlist are GATED behind Coming Soon. They're
     commented out so the sidebar only shows links to pages that
     actually work. Uncomment when you unlock those routes in App.jsx. */
 const LINKS = [
-  { key: "about", label: "About You", to: "/account" },
+  { key: 'about', label: 'About You', to: '/account' },
   // { key: 'orders', label: 'Order History', to: '/account/orders' },  // ← GATED
-  { key: "addresses", label: "Addresses", to: "/account/addresses" },
+  { key: 'addresses', label: 'Addresses', to: '/account/addresses' },
   // { key: 'wishlist', label: 'Wishlist', to: '/wishlist' },  // ← GATED
 ];
 
@@ -35,8 +35,8 @@ export default function AccountSidebar({ active }) {
             to={link.to}
             className={
               active === link.key
-                ? "shrink-0 font-bold text-[var(--ink)] underline underline-offset-4"
-                : "shrink-0 text-[var(--muted)] hover:text-[var(--ink)]"
+                ? 'shrink-0 font-bold text-[var(--ink)] underline underline-offset-4'
+                : 'shrink-0 text-[var(--muted)] hover:text-[var(--ink)]'
             }
           >
             {link.label}
@@ -56,7 +56,7 @@ export default function AccountSidebar({ active }) {
         onConfirm={() => {
           logout();
           setConfirmOpen(false);
-          navigate("/");
+          navigate('/');
         }}
       />
     </>
