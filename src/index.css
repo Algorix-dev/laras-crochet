@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=Yellowtail&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Raleway:wght@800&family=Instrument+Serif:ital@0;1&family=Yellowtail&display=swap');
 @import "tailwindcss";
 
 /* -----------------------------------------------------------
@@ -7,16 +7,43 @@
    that references it (via Tailwind's arbitrary value syntax,
    e.g. bg-[var(--maroon)]) updates everywhere. This is how you
    avoid hunting through 12 files to change one hex code.
+
+   Values below are parsed from the FULL Figma dev-mode CSS
+   export (every layer, every page - 150,990 lines), not
+   eyeballed from screenshots or guessed. See docs/figma-tokens.md
+   for how these were derived and how to re-derive them if the
+   Figma file changes.
 ----------------------------------------------------------- */
 :root {
-  --maroon: #4a0e1e;
-  --maroon-dark: #350a16;
-  --cream: #f7f6f3;
-  --ink: #15141a;
-  --muted: #6f6d76;
-  --line: #e4e2dd;
-  --mauve: #c9aeb4;
+  --maroon: #412b2d;      /* Gray/700 - primary buttons */
+  --maroon-dark: #4c0519; /* corrected - actual hover/dark value from export, was guessed wrong before */
+  --cream: #fafafa;       /* Neutral/25 - page background */
+  --ink: #404040;         /* Neutral/600 - primary text */
+  --ink-warm: #564345;    /* Gray/600 - used on Account + Logout modal only, see note below */
+  --muted: #737373;       /* Neutral/400 - secondary text */
+  --line: #e5e5e5;        /* Neutral/100 - lighter, most common border. corrected: this was --line-2's value before */
+  --line-2: #d4d4d4;      /* Neutral/200 - slightly darker border */
+  --mauve: #ded3d4;       /* corrected - 2nd most common color site-wide (161 uses); old value (#c9aeb4) was essentially fabricated, barely appears in the real export */
+  --mauve-light: #efe7e7; /* light pink bg - pills, cards */
+  --mauve-muted: #927c7e; /* muted mauve text/border */
+  --white-warm: #fffcfc;  /* warm white - button text on maroon, some card backgrounds */
 }
+
+/* TIP: active nav-link labels use Raleway 800 uppercase in the Figma
+   export; inactive links stay DM Sans. Not yet applied in Navbar.jsx -
+   see docs/figma-tokens.md. */
+.font-nav-active {
+  font-family: 'Raleway', sans-serif;
+  font-weight: 800;
+}
+
+/* TIP: --ink-warm exists because the Figma export has TWO body-text
+   colors that look like they should be the same role: most pages use
+
+   --ink (#404040), but Account page + Logout modal use --ink-warm
+   (#564345) instead. Flagged this to Emmanuel rather than silently
+   picking one — until confirmed with Lara, don't apply --ink-warm to
+   any new page without checking its own dev-mode export first. */
 
 * {
   box-sizing: border-box;
@@ -26,22 +53,34 @@ body {
   margin: 0;
   background: var(--cream);
   color: var(--ink);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'DM Sans', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* TIP: 'Genty Demo' (the "Lara's Crochet" wordmark font) is
+   personal-use only — its license does not permit commercial
+   webfont embedding. Until the licensed version is purchased
+   (Creative Market, "Genty Bold Rounded Typeface", ~$15) this
+   falls back to Instrument Serif italic, which is visually closer
+   to the handwritten wordmark than a generic serif. Swap the
+   font-family below to 'Genty Demo' the moment the licensed
+   @font-face file is added — nothing else needs to change. */
+.font-logo {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
 }
 
 .font-display {
   font-family: 'Instrument Serif', serif;
 }
 
-/* TIP: scoped utility, not a change to body's default font. Pages
-   being rebuilt to exact Figma spec (starting with Sign In) use DM
-   Sans per the actual design file — applying it only where confirmed
-   avoids silently changing every other not-yet-rebuilt page's font
-   before it's been checked against its own spec. */
+/* TIP: kept as a named utility for clarity even though it's now the
+   body default — makes intent explicit at call sites that reach for
+   DM Sans specifically (e.g. matching a Figma spec exactly). */
 .font-ui {
   font-family: 'DM Sans', sans-serif;
 }
+
 
 /* Utility for the mobile horizontal scroll strip in the custom
    order section — hides the scrollbar but keeps it functional */

@@ -17,6 +17,31 @@ export async function getProduct(id) {
   return res.json();
 }
 
+// TIP: kicks off a real payment — the backend recalculates the total
+// from the database (never trusting a price from the browser), saves
+// a "pending" Order, and calls Paystack for a checkout URL. The
+// frontend's job is just to redirect the browser to that URL.
+export async function initializePayment(payload) {
+  const res = await fetch(`${API_URL}/api/payments/initialize`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Could not start payment');
+  return data; // { authorizationUrl }
+}
+
+// TIP: called once Paystack redirects the customer back to
+// /order-confirmation?reference=xxx — confirms with the backend
+// (which itself re-checks with Paystack) that the payment actually
+// went through before treating the order as paid.
+export async function verifyPayment(reference) {
+  const res = await fetch(`${API_URL}/api/payments/verify/${reference}`);
+  if (!res.ok) throw new Error('Could not verify payment');
+  return res.json(); // { verified, order }
+}
+
 // TIP: attaches the customer's JWT automatically — every page that
 // needs an authenticated call (addresses, order history) can use
 // this instead of manually building the Authorization header each time.

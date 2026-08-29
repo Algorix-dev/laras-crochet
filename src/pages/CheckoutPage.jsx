@@ -15,16 +15,20 @@ import { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useCurrency } from '../context/CurrencyContext';
+import { initializePayment } from '../api';
 import Footer from '../components/Footer';
 
 /* TIP: Reusable input field component — renders a label + text input
-   with shared styling matching the Figma's light gray borders. */
-const Field = ({ label, value, ...props }) => (
+   with shared styling matching the Figma's light gray borders.
+   Now a controlled input (value + onChange) instead of defaultValue,
+   since we need the actual values at submit time to send to the API. */
+const Field = ({ label, value, onChange, ...props }) => (
   <label className="block text-xs">
     {label && <span className="mb-1 block text-[var(--muted)]">{label}</span>}
     <input
       {...props}
-      defaultValue={value}
+      value={value}
+      onChange={onChange}
       required={!props.optional}
       className="w-full border border-[var(--line)] bg-white px-3 py-3 text-sm"
     />
@@ -36,6 +40,30 @@ export default function CheckoutPage() {
   const { formatPrice } = useCurrency();
   const [code, setCode] = useState('');
 
+  // TIP: one state object for every field the backend actually
+  // needs (see server/routes/payments.js: customerName, customerEmail,
+  // customerPhone, shippingAddress). Fields the Figma shows but the
+  // backend doesn't use yet (apartment, postal code) still update
+  // local state so the inputs work, they just aren't sent.
+  const [form, setForm] = useState({
+    email: '',
+    newsletterOptIn: false,
+    country: 'Nigeria',
+    firstName: '',
+    lastName: '',
+    address: '',
+    apartment: '',
+    city: '',
+    state: 'Lagos',
+    postalCode: '',
+    phone: '',
+  });
+  const updateField = (key) => (e) =>
+    setForm((f) => ({ ...f, [key]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
+
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+
   /* TIP: Shipping is a flat ₦10,000 fee (₦0 if the cart is empty).
      The Figma shows ₦10,000 for shipping. */
   const shipping = cartItems.length ? 10000 : 0;
@@ -46,16 +74,47 @@ export default function CheckoutPage() {
   /* TIP: Total number of items in the cart (sum of all quantities). */
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  /* TIP: Form submission handler — dispatches a toast confirming
-     the shipping details were saved. In a real app, this would
-     send the data to a backend. */
-  const submit = (e) => {
+  /* TIP: Real submit — builds the payload the backend expects and
+     redirects the browser straight to Paystack's checkout page. The
+     order is created as "pending" on the backend right away; it only
+     flips to "paid" once /order-confirmation calls verifyPayment()
+     after Paystack redirects back. */
+  const submit = async (e) => {
     e.preventDefault();
-    window.dispatchEvent(
-      new CustomEvent('lara-toast', {
-        detail: 'Shipping details saved. We will confirm your order shortly.',
-      })
-    );
+    if (!cartItems.length) return;
+    setSubmitError(null);
+    setSubmitting(true);
+    try {
+      const { authorizationUrl } = await initializePayment({
+        customerName: `${form.firstName} ${form.lastName}`.trim(),
+        customerEmail: form.email,
+        customerPhone: `+234${form.phone}`,
+        // TIP: server/models/Order.js stores shippingAddress as a plain
+        // String field, not a nested object — so we format it into one
+        // readable line here rather than sending the raw form object
+        // (which Mongoose would otherwise coerce into "[object Object]").
+        shippingAddress: [
+          form.address,
+          form.apartment,
+          form.city,
+          form.state,
+          form.postalCode,
+          form.country,
+        ]
+          .filter(Boolean)
+          .join(', '),
+        items: cartItems.map((item) => ({
+          productId: item.product.id,
+          color: item.selectedColor,
+          size: item.selectedSize,
+          quantity: item.quantity,
+        })),
+      });
+      window.location.href = authorizationUrl;
+    } catch (err) {
+      setSubmitError(err.message || 'Something went wrong starting payment. Please try again.');
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -76,9 +135,9 @@ export default function CheckoutPage() {
               Lara&apos;s Crochet
             </Link>
 
-            {/* TIP: Breadcrumb-style step indicator.
-                "Information" is the active step (bold),
-                "Shipping" and "Payment" are upcoming steps (muted). */}
+            {/* TIP: Breadcrumb-style step indicator. This form covers
+                Information + Shipping (address) in one step — Paystack
+                itself handles the Payment step once we redirect there. */}
             <p className="mt-6 text-xs">
               <b>Information</b>{' '}
               <span className="mx-2 text-[var(--muted)]">
@@ -91,7 +150,7 @@ export default function CheckoutPage() {
               <h2 className="text-sm font-semibold">Contact</h2>
 
               <div className="mt-3 relative">
-                <Field type="email" placeholder="Email" />
+                <Field type="email" placeholder="Email" value={form.email} onChange={updateField('email')} />
                 {/* TIP: Help icon inside the email field */}
                 <button
                   type="button"
@@ -110,7 +169,7 @@ export default function CheckoutPage() {
               </div>
 
               <label className="mt-3 flex gap-2 text-xs">
-                <input type="checkbox" className="rounded-sm" />
+                <input type="checkbox" className="rounded-sm" checked={form.newsletterOptIn} onChange={updateField('newsletterOptIn')} />
                 Email me with news and offers
               </label>
             </section>
@@ -129,7 +188,8 @@ export default function CheckoutPage() {
                   <span className="mb-1 block text-[var(--muted)]">Country/Region</span>
                   <select
                     className="w-full border border-[var(--line)] p-3 text-sm"
-                    defaultValue="Nigeria"
+                    value={form.country}
+                    onChange={updateField('country')}
                   >
                     <option>Nigeria</option>
                     <option>United States</option>
@@ -141,22 +201,24 @@ export default function CheckoutPage() {
 
                 {/* TIP: First name and last name side by side. */}
                 <div className="grid grid-cols-2 gap-3">
-                  <Field placeholder="First name" />
-                  <Field placeholder="Last name" />
+                  <Field placeholder="First name" value={form.firstName} onChange={updateField('firstName')} />
+                  <Field placeholder="Last name" value={form.lastName} onChange={updateField('lastName')} />
                 </div>
 
-                <Field placeholder="Address" />
+                <Field placeholder="Address" value={form.address} onChange={updateField('address')} />
                 <Field
                   placeholder="Apartment, suite, etc. (optional)"
                   optional
+                  value={form.apartment}
+                  onChange={updateField('apartment')}
                 />
 
                 {/* TIP: City, State, and Postal Code — three columns.
                     State shows "Lagos" as default, matching the Figma. */}
                 <div className="grid grid-cols-3 gap-3">
-                  <Field placeholder="City" />
-                  <Field label="State" value="Lagos" />
-                  <Field placeholder="Postal Code (Optional)" optional />
+                  <Field placeholder="City" value={form.city} onChange={updateField('city')} />
+                  <Field label="State" value={form.state} onChange={updateField('state')} />
+                  <Field placeholder="Postal Code (Optional)" optional value={form.postalCode} onChange={updateField('postalCode')} />
                 </div>
 
                 {/* TIP: Phone number with Nigerian flag + country code. */}
@@ -172,6 +234,8 @@ export default function CheckoutPage() {
                   <input
                     required
                     placeholder="Phone number"
+                    value={form.phone}
+                    onChange={updateField('phone')}
                     className="min-w-0 flex-1 p-3 text-sm"
                   />
                   {/* TIP: Help icon inside the phone field */}
@@ -198,12 +262,20 @@ export default function CheckoutPage() {
               </div>
             </section>
 
-            {/* TIP: Submit button — dark, full-width, uppercase. */}
+            {submitError && (
+              <p className="mt-4 text-xs text-red-500">{submitError}</p>
+            )}
+
+            {/* TIP: Submit button — dark, full-width, uppercase.
+                Disabled while the payment request is in flight, and
+                whenever the bag is empty, so a person can't start
+                checkout on nothing. */}
             <button
               type="submit"
-              className="mt-8 w-full bg-[var(--ink)] py-4 text-xs font-bold tracking-widest text-white"
+              disabled={submitting || !cartItems.length}
+              className="mt-8 w-full bg-[var(--ink)] py-4 text-xs font-bold tracking-widest text-white disabled:opacity-50"
             >
-              CONTINUE TO SHIPPING
+              {submitting ? 'REDIRECTING TO PAYMENT…' : 'CONTINUE TO PAYMENT'}
             </button>
           </form>
 

@@ -7,7 +7,7 @@
 
   The "View Bag" button in the BagDrawer navigates here.
 */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, Minus, Plus, Trash2, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -15,7 +15,7 @@ import { useCurrency } from '../context/CurrencyContext';
 import { useWishlist } from '../context/WishlistContext';
 import ProductGrid from '../components/ProductGrid';
 import Footer from '../components/Footer';
-import { products } from '../data/products';
+import { getProducts, normalizeProduct } from '../api';
 
 export default function MyBagPage() {
   const {
@@ -32,15 +32,27 @@ export default function MyBagPage() {
   const [promoOpen, setPromoOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [deliveryOpen, setDeliveryOpen] = useState(false);
+  const [recommendations, setRecommendations] = useState([]);
 
   // TIP: shipping is flat ₦10,000 (same as CheckoutPage) — keep
   // these in sync, or pull them into a shared constants file later.
   const shipping = cartItems.length ? 10000 : 0;
   const total = cartTotal + shipping;
 
-  // Recommendations: show products that are NOT already in the cart
-  const cartProductIds = new Set(cartItems.map((item) => item.product.id));
-  const recommendations = products.filter((p) => !cartProductIds.has(p.id));
+  // Recommendations: fetch real products from the API (like ShopPage
+  // and ProductDetail do) and filter out anything already in the bag,
+  // instead of reading the old hardcoded products.js array.
+  useEffect(() => {
+    getProducts('all')
+      .then((data) => {
+        const cartProductIds = new Set(cartItems.map((item) => item.product.id));
+        setRecommendations(
+          data.map(normalizeProduct).filter((p) => !cartProductIds.has(p.id)).slice(0, 4)
+        );
+      })
+      .catch(() => setRecommendations([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartItems.length]);
 
   if (!cartItems.length) {
     return (
@@ -51,7 +63,7 @@ export default function MyBagPage() {
               <Link to="/" className="hover:underline">Home</Link> /{' '}
               <Link to="/shop" className="hover:underline">Shop</Link> / Bag
             </p>
-            <h1 className="font-display text-3xl md:text-4xl italic mb-3">
+            <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-wide text-[var(--ink)] mb-3">
               My Bag
             </h1>
             <p className="text-sm text-[var(--muted)] mb-8">
@@ -81,7 +93,7 @@ export default function MyBagPage() {
           </p>
 
           {/* Page header */}
-          <h1 className="font-display text-3xl md:text-4xl italic mb-1">
+          <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-wide text-[var(--ink)] mb-1">
             My Bag ({cartCount})
           </h1>
           <p className="text-xs text-[var(--muted)] mb-10">
@@ -309,7 +321,7 @@ export default function MyBagPage() {
             ================================================================ */}
         {recommendations.length > 0 && (
           <section className="max-w-7xl mx-auto px-5 md:px-8 pb-16">
-            <h2 className="font-display text-2xl md:text-3xl italic mb-8">
+            <h2 className="font-display text-2xl md:text-3xl mb-8">
               Lara Thinks You'd Love These Too
             </h2>
             <ProductGrid products={recommendations} />

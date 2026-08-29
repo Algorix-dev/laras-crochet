@@ -8,7 +8,7 @@
 
   The Navbar renders outside <Routes> so it appears on every page.
 */
-import { Link, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import CategoryIntro from './components/CategoryIntro';
@@ -19,6 +19,7 @@ import ProductDetail from './pages/ProductDetail';
 import ShopPage from './pages/ShopPage';
 import AboutPage from './pages/AboutPage';
 import CheckoutPage from './pages/CheckoutPage';
+import OrderConfirmationPage from './pages/OrderConfirmationPage';
 import ContactPage from './pages/ContactPage';
 import SignInPage from './pages/SignInPage';
 import AccountPage from './pages/AccountPage';
@@ -27,7 +28,7 @@ import OrderHistoryPage from './pages/OrderHistoryPage';
 import AddressesPage from './pages/AddressesPage';
 import MyBagPage from './pages/MyBagPage';
 import ComingSoon from './pages/ComingSoon';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { useEffect, useState } from 'react';
 import { products, heroProduct } from './data/products';
 import { getProducts, normalizeProduct } from './api';
@@ -130,6 +131,26 @@ function ScrollToTop() {
   return null;
 }
 
+/* TIP: Gates "/" behind sign-in, matching the Figma prototype's
+   starting point. Signed-in visitors see the homepage as normal;
+   signed-out visitors get sent to /signin first. This only guards
+   the homepage — /shop, /product/:id etc. are still open to browse
+   directly by URL, so a shared product link still works even for a
+   signed-out visitor. */
+function HomeGate() {
+  const { isSignedIn } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isSignedIn) {
+      navigate('/signin', { replace: true });
+    }
+  }, [isSignedIn, navigate]);
+
+  if (!isSignedIn) return null;
+  return <HomePage />;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -138,7 +159,7 @@ export default function App() {
       <Toast />
       <Routes>
         {/* ===== ROUTES VISIBLE TO CLIENT ===== */}
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<HomeGate />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/signin" element={<SignInPage />} />
@@ -147,14 +168,16 @@ export default function App() {
 
         {/* ===== ROUTES HIDDEN (Coming Soon until you unlock them) ===== */}
         {/* TIP: To unlock a page, replace <ComingSoon /> with the real
-            component. For example, to unlock the shop:
-            <Route path="/shop" element={<ShopPage />} /> */}
-        <Route path="/shop" element={<ComingSoon />} />
-        <Route path="/product/:id" element={<ComingSoon />} />
-        <Route path="/checkout" element={<ComingSoon />} />
-        <Route path="/account/orders" element={<ComingSoon />} />
-        <Route path="/wishlist" element={<ComingSoon />} />
-        <Route path="/bag" element={<ComingSoon />} />
+            component. Shop, Product Detail, and Bag are now live —
+            each of those page components already existed, they were
+            just switched off here. */}
+        <Route path="/shop" element={<ShopPage />} />
+        <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+        <Route path="/account/orders" element={<OrderHistoryPage />} />
+        <Route path="/wishlist" element={<WishlistPage />} />
+        <Route path="/bag" element={<MyBagPage />} />
 
         {/* Catch-all: unknown routes go to home so the user never sees a blank page */}
         <Route path="*" element={<HomePage />} />

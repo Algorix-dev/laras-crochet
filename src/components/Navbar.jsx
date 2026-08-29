@@ -77,7 +77,7 @@ export default function Navbar() {
       <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--cream)]/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:px-8">
           {/* Brand logo */}
-          <Link to="/" className="font-display text-xl italic">
+          <Link to="/" className="font-logo text-xl">
             Lara's Crochet
           </Link>
 
@@ -89,7 +89,7 @@ export default function Navbar() {
                 to={l.to}
                 className={
                   isActive(l.to)
-                    ? "font-bold text-[var(--ink)]"
+                    ? "font-nav-active text-[var(--ink)]"
                     : "text-[var(--muted)] hover:text-[var(--ink)]"
                 }
               >
@@ -134,7 +134,7 @@ export default function Navbar() {
                 onClick={() => setMenuOpen(false)}
                 className={
                   isActive(l.to)
-                    ? "font-bold text-[var(--ink)]"
+                    ? "font-nav-active text-[var(--ink)]"
                     : "text-[var(--muted)] hover:text-[var(--ink)]"
                 }
               >

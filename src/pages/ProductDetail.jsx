@@ -10,9 +10,9 @@
   their own detail page at /product/{id}.
 */
 import { Check, Star, Heart } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { heroProduct, products, reinaBackView } from '../data/products';
+import { getProduct, getProducts, normalizeProduct } from '../api';
 import { useCart } from '../context/CartContext';
 import ProductCard from '../components/ProductCard';
 import Footer from '../components/Footer';
@@ -32,7 +32,7 @@ import ShareButton from '../components/ShareButton';
 const tabs = {
   Details:
     'Hand-crocheted from premium yarn. Each piece is made to order from Lagos, Nigeria. Production time: 2-3 weeks. Ships within Nigeria and internationally.',
-  'FAQs & Care':
+  'Fit & Fabric':
     'Hand wash cold. Lay flat to dry. Do not bleach. Store folded to maintain shape. For sizing questions, contact us.',
   Returns:
     'As each piece is made to order, we cannot accept returns for change of mind. However, if you receive a defective item, please contact us within 7 days of delivery.',
@@ -232,30 +232,68 @@ function Reviews() {
    Main Product Detail Page component
 ----------------------------------------------------------- */
 export default function ProductDetail() {
-  /* TIP: useParams() reads the :id from the URL.
-     If you visit /product/reina, id will be "reina".
-     We look it up in our products array — if not found,
-     we default to the first product so the page never crashes. */
+  /* TIP: useParams() reads the :id from the URL — this is now a
+     real Mongo _id coming from ProductCard's <Link to={`/product/${product.id}`}>,
+     not a hardcoded slug like "reina". So instead of looking the
+     product up in a local array, we fetch it from the API, the same
+     way ShopPage does. */
   const { id } = useParams();
-  const product = products.find((item) => item.id === id) || products[0];
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [related, setRelated] = useState([]);
 
-  /* Gallery images: we take angles from the hero product (skipping
-     the center/front since it's already the main image), plus the
-     back view that was saved specifically for this page. */
-  const gallery = [
-    ...heroProduct.angles.slice(1, 4),
-    { src: reinaBackView, flip: false },
-  ];
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    setProduct(null);
+    getProduct(id)
+      .then((data) => setProduct(normalizeProduct(data)))
+      .catch(() => setError('This product could not be found.'))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  // TIP: once we know the product's category, fetch a few more from
+  // the same category for the "Lara Thinks You'd Love These Too"
+  // section, excluding the product already on the page.
+  useEffect(() => {
+    if (!product?.category) return;
+    getProducts(product.category)
+      .then((data) =>
+        setRelated(
+          data.map(normalizeProduct).filter((p) => p.id !== product.id).slice(0, 4)
+        )
+      )
+      .catch(() => setRelated([]));
+  }, [product?.category, product?.id]);
+
+  /* Gallery images come straight from the product's `images` array
+     (Cloudinary URLs from the backend) — no more hardcoded angles.
+     Every product needs at least one image (enforced by the schema),
+     so this is safe once `product` is loaded. */
+  const gallery = product?.images?.length ? product.images : [];
 
   /* TIP: Each selector (color, shade, size) has its own state.
      When the user clicks "Add to Bag", we send all three
      selections to the cart context so we know exactly which
-     variant they ordered. */
-  const [selectedImage, setSelectedImage] = useState(1);
-  const [color, setColor] = useState(product.colors[0]);
-  const [shade, setShade] = useState(product.shades[0]);
-  const [size, setSize] = useState(product.sizes[0]);
+     variant they ordered. Initialized once the product loads —
+     see the effect below. */
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [color, setColor] = useState(null);
+  const [shade, setShade] = useState(null);
+  const [size, setSize] = useState(null);
   const [activeTab, setActiveTab] = useState('Details');
+
+  // TIP: product arrives asynchronously, so we can't set these
+  // default selections at useState() time above — this effect fires
+  // once the fetch resolves and seeds the first color/shade/size.
+  useEffect(() => {
+    if (!product) return;
+    setSelectedImage(0);
+    setColor(product.colors?.[0] ?? null);
+    setShade(product.shades?.[0] ?? null);
+    setSize(product.sizes?.[0] ?? null);
+  }, [product]);
 
   /* Toast notification — shows briefly when item is added to bag */
   const [toast, setToast] = useState(false);
@@ -269,15 +307,34 @@ export default function ProductDetail() {
     window.setTimeout(() => setToast(false), 2500);
   };
 
+  if (loading) {
+    return (
+      <main className="mx-auto max-w-7xl px-5 py-24 text-center text-sm text-[var(--muted)] md:px-8">
+        Loading product...
+      </main>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <main className="mx-auto max-w-7xl px-5 py-24 text-center md:px-8">
+        <p className="text-sm text-red-500">{error || 'Product not found.'}</p>
+        <Link to="/shop" className="mt-4 inline-block text-xs uppercase tracking-wider text-[var(--maroon)]">
+          ← Back to shop
+        </Link>
+      </main>
+    );
+  }
+
   return (
     <>
       <main className="mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-12">
         {/* Back to shop link */}
         <Link
-          to="/"
+          to="/shop"
           className="mb-6 inline-block text-xs uppercase tracking-wider text-[var(--muted)] hover:text-[var(--maroon)]"
         >
-          ← Shop dresses
+          ← Back to shop
         </Link>
 
         {/* ============================
@@ -288,47 +345,44 @@ export default function ProductDetail() {
           <section>
             {/* Main image in a light gray container */}
             <div className="aspect-[4/5] bg-[#efece6]">
-              <img
-                src={gallery[selectedImage].src}
-                alt="The Reina Dress"
-                className={`h-full w-full object-contain ${
-                  gallery[selectedImage].flip ? '-scale-x-100' : ''
-                }`}
-              />
+              {gallery[selectedImage] && (
+                <img
+                  src={gallery[selectedImage]}
+                  alt={product.name}
+                  className="h-full w-full object-contain"
+                />
+              )}
             </div>
 
-            {/* Thumbnail row — clicking switches the main image */}
-            <div className="mt-3 grid grid-cols-4 gap-3">
-              {gallery.map((image, index) => (
-                <button
-                  key={index}
-                  aria-label={`View dress angle ${index + 1}`}
-                  onClick={() => setSelectedImage(index)}
-                  className={`aspect-square bg-[#efece6] ${
-                    index === selectedImage
-                      ? 'ring-1 ring-[var(--ink)] ring-offset-2'
-                      : ''
-                  }`}
-                >
-                  <img
-                    src={image.src}
-                    alt=""
-                    className={`h-full w-full object-contain ${
-                      image.flip ? '-scale-x-100' : ''
+            {/* Thumbnail row — clicking switches the main image.
+                Only renders when there's more than one shot. */}
+            {gallery.length > 1 && (
+              <div className="mt-3 grid grid-cols-4 gap-3">
+                {gallery.map((src, index) => (
+                  <button
+                    key={src + index}
+                    aria-label={`View ${product.name} angle ${index + 1}`}
+                    onClick={() => setSelectedImage(index)}
+                    className={`aspect-square bg-[#efece6] ${
+                      index === selectedImage
+                        ? 'ring-1 ring-[var(--ink)] ring-offset-2'
+                        : ''
                     }`}
-                  />
-                </button>
-              ))}
-            </div>
+                  >
+                    <img src={src} alt="" className="h-full w-full object-contain" />
+                  </button>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* ---- RIGHT: Product Info & Purchase ---- */}
           <section className="lg:pt-4">
             <p className="text-xs uppercase tracking-widest text-[var(--muted)] underline">
-              Dresses
+              {product.category?.replace('-', ' ')}
             </p>
             <h1 className="mt-3 font-display text-5xl font-bold leading-none md:text-6xl">
-              The Reina Dress
+              {product.name}
             </h1>
             <div className="mt-4 flex items-center gap-4">
               <p className="text-xl">{formatPrice(product.price)}</p>
@@ -350,60 +404,69 @@ export default function ProductDetail() {
               Made to order, one piece at a time, out of Lagos, Nigeria.
             </p>
 
-            {/* Selectors */}
+            {/* Selectors — each section only renders if the product
+                actually has that attribute, since real DB products
+                (unlike the old hardcoded data) might not have colors
+                or shades set. */}
             <div className="mt-8 space-y-7">
               {/* Color Mix */}
-              <div>
-                <p className="mb-3 text-sm font-medium">Color Mix</p>
-                <div className="flex gap-3">
-                  {product.colors.map((c, i) => (
-                    <ColorSwatch
-                      key={c}
-                      value={c}
-                      active={color === c}
-                      onClick={() => setColor(c)}
-                      label={`Select color mix ${i + 1}`}
-                    />
-                  ))}
+              {product.colors?.length > 0 && (
+                <div>
+                  <p className="mb-3 text-sm font-medium">Color Mix</p>
+                  <div className="flex gap-3">
+                    {product.colors.map((c, i) => (
+                      <ColorSwatch
+                        key={c}
+                        value={c}
+                        active={color === c}
+                        onClick={() => setColor(c)}
+                        label={`Select color mix ${i + 1}`}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Shades */}
-              <div>
-                <p className="mb-3 text-sm font-medium">Shades</p>
-                <div className="flex gap-3">
-                  {product.shades.map((s, i) => (
-                    <ColorSwatch
-                      key={`${s}-${i}`}
-                      value={s}
-                      active={shade === s}
-                      onClick={() => setShade(s)}
-                      label={`Select shade ${i + 1}`}
-                    />
-                  ))}
+              {product.shades?.length > 0 && (
+                <div>
+                  <p className="mb-3 text-sm font-medium">Shades</p>
+                  <div className="flex gap-3">
+                    {product.shades.map((s, i) => (
+                      <ColorSwatch
+                        key={`${s}-${i}`}
+                        value={s}
+                        active={shade === s}
+                        onClick={() => setShade(s)}
+                        label={`Select shade ${i + 1}`}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Sizing */}
-              <div>
-                <p className="mb-3 text-sm font-medium">Sizing</p>
-                <div className="flex gap-2">
-                  {product.sizes.map((s) => (
-                    <button
-                      key={s}
-                      aria-pressed={size === s}
-                      onClick={() => setSize(s)}
-                      className={`rounded-sm border px-4 py-2 text-xs tracking-wide transition-colors ${
-                        size === s
-                          ? 'border-[var(--ink)] bg-[var(--ink)] text-white'
-                          : 'border-[var(--line)] text-[var(--ink)] hover:border-[var(--ink)]'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
+              {product.sizes?.length > 0 && (
+                <div>
+                  <p className="mb-3 text-sm font-medium">Sizing</p>
+                  <div className="flex gap-2">
+                    {product.sizes.map((s) => (
+                      <button
+                        key={s}
+                        aria-pressed={size === s}
+                        onClick={() => setSize(s)}
+                        className={`rounded-sm border px-4 py-2 text-xs tracking-wide transition-colors ${
+                          size === s
+                            ? 'border-[var(--ink)] bg-[var(--ink)] text-white'
+                            : 'border-[var(--line)] text-[var(--ink)] hover:border-[var(--ink)]'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Add to Bag button */}
@@ -455,16 +518,18 @@ export default function ProductDetail() {
         {/* ============================
             RECOMMENDATIONS
             ============================ */}
-        <section className="mt-20">
-          <h2 className="font-display text-3xl md:text-4xl">
-            Lara Thinks You&apos;d Like
-          </h2>
-          <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4">
-            {products.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        </section>
+        {related.length > 0 && (
+          <section className="mt-20">
+            <h2 className="font-display text-3xl md:text-4xl">
+              Lara Thinks You&apos;d Love These Too
+            </h2>
+            <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4">
+              {related.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
 
       <Footer />

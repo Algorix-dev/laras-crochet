@@ -6,51 +6,72 @@
   without it. Reusing ProductGrid instead of writing new grid markup
   is exactly the same trick as ShopPage.jsx.
 */
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useWishlist } from '../context/WishlistContext';
-import { products } from '../data/products';
+import { getProducts, normalizeProduct } from '../api';
 import ProductGrid from '../components/ProductGrid';
 import Footer from '../components/Footer';
 
 export default function WishlistPage() {
   const { wishlistItems } = useWishlist();
+  const [allProducts, setAllProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // TIP: wishlistItems is just an array of product IDs (see
-  // WishlistContext) — this looks up the full product objects so
-  // ProductGrid has what it needs to actually render cards.
-  const wishlistedProducts = products.filter((p) => wishlistItems.includes(p.id));
+  // WishlistContext) — we fetch the full catalog once from the API
+  // (like ShopPage does) and match IDs client-side, instead of
+  // reading the old hardcoded products.js array.
+  useEffect(() => {
+    getProducts('all')
+      .then((data) => setAllProducts(data.map(normalizeProduct)))
+      .catch(() => setAllProducts([]))
+      .finally(() => setLoading(false));
+  }, []);
 
-  // "You might also like" — recommend products NOT already in the wishlist
-  const recommended = products.filter((p) => !wishlistItems.includes(p.id));
+  const wishlistedProducts = allProducts.filter((p) => wishlistItems.includes(p.id));
+
+  // "Lara Thinks You'd Love These Too" — recommend products NOT already in the wishlist
+  const recommended = allProducts.filter((p) => !wishlistItems.includes(p.id)).slice(0, 4);
+
+  if (loading) {
+    return (
+      <section className="mx-auto max-w-7xl px-5 pt-10 pb-24 text-sm text-[var(--muted)] md:px-8">
+        Loading your wishlist...
+      </section>
+    );
+  }
 
   return (
     <>
       <section className="mx-auto max-w-7xl px-5 pt-10 md:px-8">
         {wishlistedProducts.length > 0 ? (
           <>
-            <h1 className="font-display text-2xl italic mb-1">
+            <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-wide text-[var(--ink)] mb-1">
               Wishlist ({wishlistedProducts.length})
             </h1>
             <p className="mb-8 text-sm text-[var(--muted)]">
-              Some pieces you loved from Lara's Crochet.
+              Some pieces you love from Lara's Crochet.
             </p>
             <ProductGrid products={wishlistedProducts} />
           </>
         ) : (
           <div className="mb-12">
-            <h1 className="font-display text-2xl italic mb-1">Wishlist</h1>
-            <p className="text-sm text-[var(--muted)]">
-              You have 0 items in your wishlist.{' '}
-              <Link to="/shop" className="underline underline-offset-2 hover:text-[var(--ink)]">
-                Start shopping →
-              </Link>
+            <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-wide text-[var(--ink)] mb-1">
+              Wishlist
+            </h1>
+            <p className="text-sm text-[var(--muted)] mb-3">
+              You have 0 items in your wishlist
             </p>
+            <Link to="/shop" className="inline-flex items-center gap-1.5 text-xs font-semibold underline underline-offset-2 hover:text-[var(--maroon)]">
+              Start shopping →
+            </Link>
           </div>
         )}
 
         {recommended.length > 0 && (
-          <div className={wishlistedProducts.length > 0 ? '' : 'mt-2'}>
-            <h2 className="mb-6 text-sm font-bold">Lara Thinks You'd Love These Too</h2>
+          <div className={wishlistedProducts.length > 0 ? 'mt-16 pb-16' : 'mt-2 pb-16'}>
+            <h2 className="font-display text-2xl md:text-3xl mb-8">Lara Thinks You'd Love These Too</h2>
             <ProductGrid products={recommended} />
           </div>
         )}

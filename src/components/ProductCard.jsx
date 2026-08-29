@@ -72,7 +72,12 @@ export default function ProductCard({ product }) {
           to={`/product/${product.id}`}
           className="text-sm"
         >
-          <div className="uppercase tracking-wide">{product.name}</div>
+          {product.category && (
+            <div className="text-[10px] uppercase tracking-wide text-[var(--muted)] mb-0.5">
+              {product.category.replace('-', ' ')}
+            </div>
+          )}
+          <div className="uppercase tracking-wide font-semibold">{product.name}</div>
           <div className="text-[var(--muted)]">
             {formatPrice(product.price)}
           </div>

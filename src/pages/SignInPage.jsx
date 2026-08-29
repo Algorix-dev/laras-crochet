@@ -124,7 +124,7 @@ export default function SignInPage() {
       if (!res.ok) throw new Error(data.error || 'Invalid code — try again.');
 
       login(data.user, data.token);
-      const redirectTo = new URLSearchParams(location.search).get('redirect') || '/account';
+      const redirectTo = new URLSearchParams(location.search).get('redirect') || '/';
       navigate(redirectTo);
     } catch (err) {
       setError(err.message);
@@ -193,9 +193,9 @@ export default function SignInPage() {
           </button>
 
           <div className="mb-4 flex items-center gap-3 text-[16px] font-semibold leading-6 text-[#737373]">
-            <span className="h-px flex-1 bg-[#D4D4D4]" />
+            <span className="h-px flex-1 bg-[var(--line-2)]" />
             OR
-            <span className="h-px flex-1 bg-[#D4D4D4]" />
+            <span className="h-px flex-1 bg-[var(--line-2)]" />
           </div>
 
           <div className="relative">
@@ -210,7 +210,7 @@ export default function SignInPage() {
                   ? 'border-red-400 text-red-600'
                   : emailTouched && isValidEmail
                   ? 'border-emerald-500'
-                  : 'border-[#D4D4D4] focus:border-[#404040]'
+                  : 'border-[var(--line-2)] focus:border-[#404040]'
               }`}
             />
             {emailTouched && isValidEmail && (
@@ -266,7 +266,7 @@ export default function SignInPage() {
                 value={digit}
                 onChange={(e) => handleCodeChange(i, e.target.value)}
                 onKeyDown={(e) => handleCodeKeyDown(i, e)}
-                className="h-16 w-[60px] border-2 border-[#D4D4D4] text-center text-lg outline-none focus:border-[#404040]"
+                className="h-16 w-[60px] border-2 border-[var(--line-2)] text-center text-lg outline-none focus:border-[#404040]"
               />
             ))}
           </div>

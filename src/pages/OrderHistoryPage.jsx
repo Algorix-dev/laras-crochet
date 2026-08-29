@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { products } from '../data/products';
+import { getProducts, normalizeProduct } from '../api';
 import ProductGrid from '../components/ProductGrid';
 import AccountSidebar from '../components/AccountSidebar';
 import Footer from '../components/Footer';
@@ -18,6 +18,7 @@ export default function OrderHistoryPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [recommended, setRecommended] = useState([]);
 
   useEffect(() => {
     if (!isSignedIn) {
@@ -42,6 +43,15 @@ export default function OrderHistoryPage() {
     fetchOrders();
   }, [isSignedIn, token, navigate]);
 
+  // TIP: recommendations now come from the live catalog (same fix
+  // as ShopPage/ProductDetail/MyBagPage/WishlistPage) instead of the
+  // old hardcoded data/products.js array.
+  useEffect(() => {
+    getProducts('all')
+      .then((data) => setRecommended(data.map(normalizeProduct).slice(0, 4)))
+      .catch(() => setRecommended([]));
+  }, []);
+
   if (!isSignedIn) return null;
 
   return (
@@ -56,14 +66,18 @@ export default function OrderHistoryPage() {
 
           <div>
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-              <h1 className="font-display text-2xl italic">Order History</h1>
-              {orders.length > 0 && (
-                <input
-                  type="search"
-                  placeholder="Search all orders"
-                  className="border border-[var(--line)] px-3 py-2 text-xs outline-none focus:border-[var(--ink)]"
-                />
-              )}
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-wide text-[var(--ink)]">
+                  Order History
+                </h1>
+              </div>
+              {/* TIP: the Figma shows this search field even in the
+                  empty state, not just once orders exist. */}
+              <input
+                type="search"
+                placeholder="Search all orders"
+                className="border border-[var(--line)] px-3 py-2 text-xs outline-none focus:border-[var(--ink)]"
+              />
             </div>
 
             {loading ? (
@@ -94,10 +108,12 @@ export default function OrderHistoryPage() {
           </div>
         </div>
 
-        <div className="mt-16">
-          <h2 className="mb-6 text-sm font-bold">Lara Thinks You'd Love These Too</h2>
-          <ProductGrid products={products} />
-        </div>
+        {recommended.length > 0 && (
+          <div className="mt-16">
+            <h2 className="font-display text-2xl md:text-3xl mb-8">Lara Thinks You'd Love These Too</h2>
+            <ProductGrid products={recommended} />
+          </div>
+        )}
       </section>
 
       <Footer showNewsletter />
